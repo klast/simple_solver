@@ -17,7 +17,7 @@ void MainWindow::handleButton()
     //! Окно для вывода сообщения
     QMessageBox msgbox;
     //! пытаемся открыть файл
-    if(reader.open(filename))
+    if(model.reader.open(filename))
     {
         msgbox.setText("Файл открыт");
     }
@@ -28,7 +28,7 @@ void MainWindow::handleButton()
     //! Вызвать окно
     msgbox.exec();
     //! закрыть файл
-    reader.close();
+    model.reader.close();
     //! завершение работы программы
     QApplication::quit();
 }

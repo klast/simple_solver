@@ -5,7 +5,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-#include "reader.h"
+#include "Model.h"
 
 namespace Ui {
 class MainWindow;
@@ -24,7 +24,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     //! Считыватель данных из DATA файла
-    Reader reader;
+    Model model;
 };
 
 #endif // MAINWINDOW_H
