@@ -11,8 +11,26 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::handleButton()
 {
+    //! Вызов диалогового окна открытия файла
     QString filename = QFileDialog::getOpenFileName(this, tr("Открыть файл модели"), "",
                                                     tr("DATA файл (*.DATA);;Все файлы(*)"));
+    //! Окно для вывода сообщения
+    QMessageBox msgbox;
+    //! пытаемся открыть файл
+    if(reader.open(filename))
+    {
+        msgbox.setText("Файл открыт");
+    }
+    else
+    {
+        msgbox.setText("Произошла шибка при открытии файла");
+    }
+    //! Вызвать окно
+    msgbox.exec();
+    //! закрыть файл
+    reader.close();
+    //! завершение работы программы
+    QApplication::quit();
 }
 
 MainWindow::~MainWindow()

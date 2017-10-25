@@ -3,6 +3,9 @@
 
 #include <QMainWindow>
 #include <QFileDialog>
+#include <QMessageBox>
+
+#include "reader.h"
 
 namespace Ui {
 class MainWindow;
@@ -20,6 +23,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    //! Считыватель данных из DATA файла
+    Reader reader;
 };
 
 #endif // MAINWINDOW_H
