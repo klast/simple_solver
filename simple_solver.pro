@@ -26,11 +26,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-        reader.cpp
+        reader.cpp \
+        model.cpp \
+        solver.cpp
 
 HEADERS += \
         mainwindow.h \
-        reader.h
+        reader.h \
+        model.h \
+        solver.h
 
 FORMS += \
         mainwindow.ui
