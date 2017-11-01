@@ -19,6 +19,7 @@ public:
 //! элементы
     Solver solver;
     Reader reader;
+    int nx, ny;
 
 };
 
