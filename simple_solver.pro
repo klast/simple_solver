@@ -36,5 +36,17 @@ HEADERS += \
         model.h \
         solver.h
 
+INCLUDEPATH += armadillo\include
+
 FORMS += \
         mainwindow.ui
+
+win32: LIBS += -L$$PWD/armadillo/lib_win64/ -llapack_win64_MT
+
+INCLUDEPATH += $$PWD/armadillo/lib_win64
+DEPENDPATH += $$PWD/armadillo/lib_win64
+
+win32: LIBS += -L$$PWD/armadillo/lib_win64/ -lblas_win64_MT
+
+INCLUDEPATH += $$PWD/armadillo/lib_win64
+DEPENDPATH += $$PWD/armadillo/lib_win64
