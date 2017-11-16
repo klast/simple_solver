@@ -16,19 +16,23 @@ void MainWindow::handleButton()
                                                     tr("DATA файл (*.DATA);;Все файлы(*)"));
     //! Окно для вывода сообщения
     QMessageBox msgbox;
+    int error_code = 0;
     //! пытаемся открыть файл
-    if(model.open(filename))
+    if(model.reader.set_datafile(filename))
     {
-        msgbox.setText("Файл открыт");
+        msgbox.setText("Исходный файл модели задан");
     }
     else
     {
-        msgbox.setText("Произошла шибка при открытии файла");
+        msgbox.setText("Произошла ошибка при открытии файла");
+        error_code = 1;
     }
     //! Вызвать окно
     msgbox.exec();
-    //! закрыть файл
-    model.reader.close();
+    if(error_code == 1)
+        QApplication::quit();
+
+    model.simulate();
     //! завершение работы программы
     QApplication::quit();
 }

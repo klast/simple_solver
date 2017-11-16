@@ -16,8 +16,11 @@ class Model
 public:
     Model();
 
-    bool open(QString &_filename);
-    void output_animation_file(double current_time);
+  //!  void output_animation_file(double current_time);
+    void simulate();
+    void read();
+    void init();
+    void solve();
 
 //! элементы
     Solver solver;

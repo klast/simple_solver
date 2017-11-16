@@ -7,16 +7,24 @@ Model::Model()
     nt = 15;
 }
 
-bool Model::open(QString &_filename)
+void Model::simulate()
 {
-    if (reader.open(_filename))
-    {
-        qDebug() << "Файл открыт";
-        return true;
-    }
-    else
-    {
-        qDebug() << "Ошибка открытия файла";
-        return false;
-    }
+    read();
+    init();
+    solve();
+}
+
+void Model::read()
+{
+
+}
+
+void Model::init()
+{
+
+}
+
+void Model::solve()
+{
+
 }

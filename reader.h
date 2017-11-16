@@ -6,6 +6,7 @@
 #include <QString>
 #include <QIODevice>
 #include <QDebug>
+#include <QMap>
 
 /*!
  \class Reader
@@ -18,10 +19,14 @@ public:
     Reader();
     //! Открытие файла
     bool open(QString &_filename);
+    bool set_datafile(QString &_filename);
     //! Закрытие файла
     void close();
-private:
-    QFile datafile;
+
+    QMap<QString, QVector<QVector<float>>> input_2d_arrays;
+    QMap<QString, QVector<float>> input_1d_arrays;
+    QMap<QString, float> input_constants;
+    QFile datafile, current_file;
     QDir datafile_directory;
 };
 
