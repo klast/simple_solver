@@ -28,18 +28,21 @@ SOURCES += \
         mainwindow.cpp \
         reader.cpp \
         model.cpp \
-        solver.cpp
+        solver.cpp \
+        graphicsform.cpp
 
 HEADERS += \
         mainwindow.h \
         reader.h \
         model.h \
-        solver.h
+        solver.h \
+        graphicsform.h
 
 INCLUDEPATH += armadillo\include
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+        graphicsform.ui
 
 win32: LIBS += -L$$PWD/armadillo/lib_win64/ -llapack_win64_MT
 
@@ -50,3 +53,5 @@ win32: LIBS += -L$$PWD/armadillo/lib_win64/ -lblas_win64_MT
 
 INCLUDEPATH += $$PWD/armadillo/lib_win64
 DEPENDPATH += $$PWD/armadillo/lib_win64
+
+

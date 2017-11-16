@@ -17,7 +17,7 @@ void MainWindow::handleButton()
     //! Окно для вывода сообщения
     QMessageBox msgbox;
     //! пытаемся открыть файл
-    if(model.reader.open(filename))
+    if(model.open(filename))
     {
         msgbox.setText("Файл открыт");
     }

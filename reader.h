@@ -15,7 +15,7 @@ public:
     //! Конструктор по умолчанию
     Reader();
     //! Открытие файла
-    bool open(QString _filename);
+    bool open(QString &_filename);
     //! Закрытие файла
     void close();
 private:

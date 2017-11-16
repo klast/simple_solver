@@ -16,6 +16,8 @@ class Model
 public:
     Model();
 
+    bool open(QString &_filename);
+
 //! элементы
     Solver solver;
     Reader reader;
