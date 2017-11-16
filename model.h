@@ -17,10 +17,12 @@ public:
     Model();
 
     bool open(QString &_filename);
+    void output_animation_file(double current_time);
 
 //! элементы
     Solver solver;
     Reader reader;
+    int nx, ny, nt;
 
 };
 

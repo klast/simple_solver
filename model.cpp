@@ -2,7 +2,9 @@
 
 Model::Model()
 {
-
+    nx = 100;
+    ny = 100;
+    nt = 15;
 }
 
 bool Model::open(QString &_filename)

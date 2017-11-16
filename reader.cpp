@@ -12,13 +12,16 @@ Reader::Reader()
 bool Reader::open(QString &_filename)
 {
     datafile.setFileName(_filename);
+    bool is_opened = datafile.open(QIODevice::ReadOnly);
     //Пытаемся открыть файл в режиме для чтения
-    if(!datafile.open(QIODevice::ReadOnly))
+    if(!is_opened)
     {
         return false;
     }
     else
     {
+        QFileInfo info1(datafile);
+        datafile_directory = info1.absoluteDir();
         return true;
     }
 }
