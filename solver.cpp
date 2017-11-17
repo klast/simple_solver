@@ -5,8 +5,8 @@
 Solver::Solver()
 {
     number_of_time_steps = 10;
-    nx = 100;
-    ny = 100;
+    nx = 1000;
+    ny = 1000;
 }
 
 void Solver::solve()
@@ -19,6 +19,7 @@ void Solver::solve()
         QString step_file = QString("step.%1.h5").arg(QString::number(time_step));
         QFile(step_file).remove();
         result.save(hdf5_name(step_file.toStdString(), "result", true));
+        qDebug() << "Step " << time_step << "calculated\n";
     }
     finalize_hdf5();
 }
@@ -26,7 +27,6 @@ void Solver::solve()
 void Solver::finalize_hdf5()
 {
     hid_t step_file, result_file, group_id;
-    QString name;
     herr_t status;
     result_file = H5Fcreate("A.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if(result_file < 0)
@@ -52,6 +52,7 @@ void Solver::finalize_hdf5()
         {
             qDebug() << "Can't copy step " << i << " file\n";
         }
+        QFile(step_file_name).remove();
         H5Fclose(step_file);
     }
     H5Gclose(group_id);
