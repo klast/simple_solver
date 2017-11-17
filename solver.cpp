@@ -2,24 +2,27 @@
 #include "hdf5.h"
 #include <QDir>
 
+#define ARMA_USE_OPENMP
+
 Solver::Solver()
 {
-    number_of_time_steps = 10;
-    nx = 1000;
-    ny = 1000;
+    number_of_time_steps = 200;
+    nx = 500;
+    ny = 500;
 }
 
 void Solver::solve()
 {
     for(int time_step = 0; time_step < number_of_time_steps; time_step++)
     {
-        Kx = randu<mat> (nx, ny);
-        Ky = randu<mat> (nx, ny);
-        mat result = Kx*Ky.t();
+        mat A = randu<mat>(nx, ny);
+        mat B = randu<mat>(nx, ny);
+        mat result = arma::solve(A, B);
+        qDebug() << "Step " << time_step << "calculated\n";
         QString step_file = QString("step.%1.h5").arg(QString::number(time_step));
         QFile(step_file).remove();
-        result.save(hdf5_name(step_file.toStdString(), "result", true));
-        qDebug() << "Step " << time_step << "calculated\n";
+        result.save(hdf5_name(step_file.toStdString(), "result"));
+        qDebug() << "Step " << time_step << "saved\n";
     }
     finalize_hdf5();
 }
@@ -41,7 +44,7 @@ void Solver::finalize_hdf5()
     for(int i = 0; i < number_of_time_steps; i++)
     {
         QString step_file_name = QString("step.%1.h5").arg(QString::number(i));
-        step_file = H5Fopen(step_file_name.toStdString().c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+        step_file = H5Fopen(step_file_name.toStdString().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
         if(step_file < 0)
         {
             qDebug() << "Can't open step " << i << " file\n";
@@ -52,8 +55,12 @@ void Solver::finalize_hdf5()
         {
             qDebug() << "Can't copy step " << i << " file\n";
         }
-        QFile(step_file_name).remove();
+        else
+        {
+            qDebug() << "Step " << i << " merged\n";
+        }
         H5Fclose(step_file);
+        QFile(step_file_name).remove();
     }
     H5Gclose(group_id);
     H5Fclose(result_file);

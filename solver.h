@@ -1,6 +1,7 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
+#include <omp.h>
 #include <QString>
 #include <QDebug>
 
@@ -25,7 +26,7 @@ public:
     mat H;
     mat Kx, Ky;
     mat Sw, Po;
-    Col<float> Krw;
+    vec Krw;
 
     int nx, ny;
     int number_of_time_steps;

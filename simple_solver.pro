@@ -38,6 +38,8 @@ HEADERS += \
         solver.h \
         graphicsform.h
 
+CONFIG += c++11
+
 DEFINES += ARMA_USE_HDF5 H5_BUILT_AS_DYNAMIC_LIB
 
 INCLUDEPATH += armadillo\include
