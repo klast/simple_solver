@@ -1,6 +1,9 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
+#include <QString>
+#include <QDebug>
+
 #include <armadillo>
 
 using namespace arma;
@@ -16,6 +19,7 @@ public:
     Solver();
 
     void solve();
+    void finalize_hdf5();
 
 //! Поля
     mat H;
