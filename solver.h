@@ -15,10 +15,12 @@ class Solver
 public:
     Solver();
 
+    void solve();
+
 //! Поля
-    Mat<float> H;
-    Mat<float> Kx, Ky;
-    Mat<float> Sw, Po;
+    mat H;
+    mat Kx, Ky;
+    mat Sw, Po;
     Col<float> Krw;
 
     int nx, ny;

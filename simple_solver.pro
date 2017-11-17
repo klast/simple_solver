@@ -38,6 +38,8 @@ HEADERS += \
         solver.h \
         graphicsform.h
 
+DEFINES += ARMA_USE_HDF5 H5_BUILT_AS_DYNAMIC_LIB
+
 INCLUDEPATH += armadillo\include
 
 FORMS += \
@@ -54,4 +56,7 @@ win32: LIBS += -L$$PWD/armadillo/lib_win64/ -lblas_win64_MT
 INCLUDEPATH += $$PWD/armadillo/lib_win64
 DEPENDPATH += $$PWD/armadillo/lib_win64
 
+win32: LIBS += -L'C:/Program Files/HDF_Group/HDF5/1.8.18/lib/' -lszip -lzlib -lhdf5 -lhdf5_cpp
 
+INCLUDEPATH += 'C:/Program Files/HDF_Group/HDF5/1.8.18/include'
+DEPENDPATH += 'C:/Program Files/HDF_Group/HDF5/1.8.18/include'

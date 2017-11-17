@@ -26,5 +26,5 @@ void Model::init()
 
 void Model::solve()
 {
-
+    solver.solve();
 }
