@@ -20,11 +20,15 @@ public:
     bool open(QString _filename);
     //! Закрытие файла
     void close();
-    double nx, ny;
+    float nx, ny;
     QString title;
     //или std::string, как хочешь
     void read();
+    void read_1d_array(QString keyword_name);
 private:
+    QMap<QString, QVector<QVector<float>>> input_2d_arrays;
+    QMap<QString, QVector<float>> input_1d_arrays;
+    QMap<QString, float> input_constants;
     QFile datafile;
 };
 
