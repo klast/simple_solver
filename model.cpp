@@ -23,6 +23,7 @@ void Model::init()
 {
     nx = reader.input_constants["nx"];
     ny = reader.input_constants["ny"];
+    // TODO: вычислить шаг по времени по условию Куранта
 }
 
 void Model::solve()

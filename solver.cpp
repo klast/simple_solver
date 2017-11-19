@@ -13,16 +13,16 @@ void Solver::solve()
 
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
         inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
-        // TODO: передаём полученное решение классу Model
+        //! TODO(Вова): сохраняем полученное решение в h5
         // TODO: обновляем необходимые данные в классе Solver
 
     };
+    //! TODO(Вова): объединить h5 с каждого шага в один, или сразу всё в один h5 записывать
 
 }
 
 void Solver::inner_solve(double begin_time, double end_time)
 {
-    // TODO: вычислить шаг по времени по условию Куранта
 
     // Если глобальный временной шаг меньше шага по Куранту
     if ((end_time - begin_time) < dt)
