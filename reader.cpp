@@ -67,24 +67,18 @@ void Reader::read()
 void Reader::read_1d_array(QString keyword_name)
 {
     QVector<float> this_array;
-    QString tmp, s; float p; int i; bool k;
-    i=1; k = false;
+    QString tmp; float p;
     while(true)
     {
         tmp = datafile.readLine();
         if (tmp[0] == "/") break;
         else{
-            tmp = tmp.trimmed();
-            tmp = tmp.prepend(" ");
-            while(k == false){
-            s = tmp.section(' ', i, i);
-            p = s.toFloat();
-            this_array.push_back(p);
-            i++;
-            k = tmp.endsWith(s);
+            QStringList my_row = tmp.split(' ');
+            for(QString item: my_row)
+            {
+                p = item.toFloat();
+                this_array.push_back(p);
             }
-            i=1;
-            k=false;
         }
     }
     qDebug() << this_array;
