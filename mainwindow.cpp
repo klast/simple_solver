@@ -16,10 +16,11 @@ void MainWindow::handleButton()
                                                     tr("DATA файл (*.DATA);;Все файлы(*)"));
     //! Окно для вывода сообщения
     QMessageBox msgbox;
+    int error_code = 0;
     //! пытаемся открыть файл
-    if(model.reader.open(filename))
+    if(model.reader.set_datafile(filename))
     {
-        msgbox.setText("Файл открыт");
+        msgbox.setText("Исходный файл модели задан");
     }
     else
     {
@@ -27,8 +28,11 @@ void MainWindow::handleButton()
     }
     //! Вызвать окно
     msgbox.exec();
-    //! закрыть файл
-    model.reader.close();
+    if(error_code != 0)
+        QApplication::quit();
+
+    model.simulate();
+
     //! завершение работы программы
     QApplication::quit();
 }

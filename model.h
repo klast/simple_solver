@@ -16,9 +16,16 @@ class Model
 public:
     Model();
 
+    void simulate();
+    void read();
+    void init();
+    void solve();
+
 //! элементы
     Solver solver;
     Reader reader;
+    int nx, ny, nt;
+    QString title;
 
 };
 
