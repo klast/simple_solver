@@ -10,6 +10,7 @@ bool Reader::set_datafile(QString &_filename)
 {
     if(open(_filename))
     {
+        current_file.close();
         datafile.setFileName(_filename);
         datafile.open(QIODevice::ReadOnly);
         QFileInfo info1(datafile);
