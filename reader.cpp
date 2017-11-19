@@ -41,42 +41,48 @@ bool Reader::open(QString &_filename)
 }
 void Reader::read()
 {
-     QString str="";
-     QString s, s1;
-     while (!datafile.atEnd())
-     {
-         str = datafile.readLine();
-         if (str.contains ("title", Qt::CaseInsensitive))
-         {
-              title = datafile.readLine();
-              title = title.simplified();
-              title = title.remove(QChar('"'), Qt::CaseInsensitive);
-         }
-         else if (str.contains ("dimens", Qt::CaseInsensitive))
-         {
-              s = datafile.readLine();
-              s = s.trimmed();
-              s = s.prepend(" ");
-              s1 = s.section(' ', 1, 1);
-              nx = s1.toFloat();
-              s1 = s.section(' ', 2, 2);
-              ny = s1.toFloat();
-              input_constants["nx"] = nx;
-              input_constants["ny"] = ny;
-         }
-         else if(str.contains("poro", Qt::CaseInsensitive))
-         {
-              read_1d_array("poro");
-         }
-         else if(str != "\r\n")
-         {
-              qDebug() << "Необработанная строчка + " << str;
-         }
-     }
-     qDebug() << title;
-     qDebug() << nx;
-     qDebug() << ny;
-     qDebug() << "Код сюда дошел";
+    read_datafile();
+    //! потом считать остальные файлы, когда узнаем спецификации
+}
+
+void Reader::read_datafile()
+{
+    QString str="";
+    QString s, s1;
+    while (!datafile.atEnd())
+    {
+        str = datafile.readLine();
+        if (str.contains ("title", Qt::CaseInsensitive))
+        {
+             title = datafile.readLine();
+             title = title.simplified();
+             title = title.remove(QChar('"'), Qt::CaseInsensitive);
+        }
+        else if (str.contains ("dimens", Qt::CaseInsensitive))
+        {
+             s = datafile.readLine();
+             s = s.trimmed();
+             s = s.prepend(" ");
+             s1 = s.section(' ', 1, 1);
+             nx = s1.toFloat();
+             s1 = s.section(' ', 2, 2);
+             ny = s1.toFloat();
+             input_constants["nx"] = nx;
+             input_constants["ny"] = ny;
+        }
+        else if(str.contains("poro", Qt::CaseInsensitive))
+        {
+             read_1d_array("poro");
+        }
+        else if(str != "\r\n")
+        {
+             qDebug() << "Необработанная строчка + " << str;
+        }
+    }
+    qDebug() << title;
+    qDebug() << nx;
+    qDebug() << ny;
+    qDebug() << "Код сюда дошел";
 }
 
 void Reader::read_1d_array(QString keyword_name)
@@ -86,8 +92,10 @@ void Reader::read_1d_array(QString keyword_name)
     while(true)
     {
         tmp = datafile.readLine();
-        if (tmp[0] == "/") break;
-        else{
+        if (tmp[0] == "/")
+            break;
+        else
+        {
             QStringList my_row = tmp.split(' ');
             for(QString item: my_row)
             {
