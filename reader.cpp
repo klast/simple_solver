@@ -67,19 +67,27 @@ void Reader::read()
 void Reader::read_1d_array(QString keyword_name)
 {
     QVector<float> this_array;
-    /*
-        считываешь также из datafile пока что
-        Формат данных будет скорее всего таким
-        PORO
-        2 3 5 6 7 1 2
-        4 7 2 5 1 3 123
-        1 2 3 4
-        /
-    */
-    // вот такой строкой ниже = добавляешь один элемент в массив
-    // вместо двойки подставляй то, что обработала
-    this_array.push_back(2);
-    //считывай до того момента пока не будет /
+    QString tmp, s; float p; int i; bool k;
+    i=1; k = false;
+    while(true)
+    {
+        tmp = datafile.readLine();
+        if (tmp[0] == "/") break;
+        else{
+            tmp = tmp.trimmed();
+            tmp = tmp.prepend(" ");
+            while(k == false){
+            s = tmp.section(' ', i, i);
+            p = s.toFloat();
+            this_array.push_back(p);
+            i++;
+            k = tmp.endsWith(s);
+            }
+            i=1;
+            k=false;
+        }
+    }
+    qDebug() << this_array;
     input_1d_arrays[keyword_name] = this_array;
 }
 
