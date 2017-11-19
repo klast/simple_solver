@@ -16,15 +16,17 @@ void Model::simulate()
 
 void Model::read()
 {
-
+    reader.read();
 }
 
 void Model::init()
 {
-
+    nx = reader.input_constants["nx"];
+    ny = reader.input_constants["ny"];
 }
 
 void Model::solve()
 {
     solver.solve();
 }
+

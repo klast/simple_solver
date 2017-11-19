@@ -2,8 +2,6 @@
 #include "hdf5.h"
 #include <QDir>
 
-#define ARMA_USE_OPENMP
-
 Solver::Solver()
 {
     number_of_time_steps = 200;
@@ -65,3 +63,4 @@ void Solver::finalize_hdf5()
     H5Gclose(group_id);
     H5Fclose(result_file);
 }
+

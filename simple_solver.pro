@@ -62,3 +62,4 @@ win32: LIBS += -L'C:/Program Files/HDF_Group/HDF5/1.8.18/lib/' -lszip -lzlib -lh
 
 INCLUDEPATH += 'C:/Program Files/HDF_Group/HDF5/1.8.18/include'
 DEPENDPATH += 'C:/Program Files/HDF_Group/HDF5/1.8.18/include'
+

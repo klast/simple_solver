@@ -24,15 +24,15 @@ void MainWindow::handleButton()
     }
     else
     {
-        msgbox.setText("Произошла ошибка при открытии файла");
-        error_code = 1;
+        msgbox.setText("Произошла шибка при открытии файла");
     }
     //! Вызвать окно
     msgbox.exec();
-    if(error_code == 1)
+    if(error_code != 0)
         QApplication::quit();
 
     model.simulate();
+
     //! завершение работы программы
     QApplication::quit();
 }

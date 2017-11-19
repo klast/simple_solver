@@ -16,7 +16,6 @@ class Model
 public:
     Model();
 
-  //!  void output_animation_file(double current_time);
     void simulate();
     void read();
     void init();
@@ -26,6 +25,8 @@ public:
     Solver solver;
     Reader reader;
     int nx, ny, nt;
+    QString title;
+
 
 };
 

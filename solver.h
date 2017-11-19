@@ -18,7 +18,6 @@ class Solver
 //! Методы
 public:
     Solver();
-
     void solve();
     void finalize_hdf5();
 
@@ -31,6 +30,7 @@ public:
     int nx, ny;
     int number_of_time_steps;
     float dt;
+
 };
 
 #endif // SOLVER_H
