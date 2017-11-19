@@ -4,7 +4,7 @@
 
 Solver::Solver()
 {
-    number_of_time_steps = 200;
+    number_of_time_steps = 5;
     nx = 500;
     ny = 500;
 }
@@ -29,7 +29,8 @@ void Solver::finalize_hdf5()
 {
     hid_t step_file, result_file, group_id;
     herr_t status;
-    result_file = H5Fcreate("A.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    QString h5_file = datafile_name.split('.').at(0) + ".h5";
+    result_file = H5Fcreate(h5_file.toStdString().c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if(result_file < 0)
     {
         qDebug() << "Can't open result file\n";

@@ -23,6 +23,10 @@ void Model::init()
 {
     nx = reader.input_constants["nx"];
     ny = reader.input_constants["ny"];
+    solver.model_directory = reader.model_directory;
+    solver.datafile_name = reader.datafile.fileName();
+    reader.input_1d_arrays.clear();
+    reader.input_constants.clear();
 }
 
 void Model::solve()

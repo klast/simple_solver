@@ -1,9 +1,9 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
-#include <omp.h>
 #include <QString>
 #include <QDebug>
+#include <QDir>
 
 #include <armadillo>
 
@@ -30,6 +30,8 @@ public:
     int nx, ny;
     int number_of_time_steps;
     float dt;
+    QDir model_directory;
+    QString datafile_name;
 
 };
 
