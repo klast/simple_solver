@@ -9,6 +9,7 @@ class Solver
 {
 public:
     Solver();
+    void solve();
 };
 
 #endif // SOLVER_H

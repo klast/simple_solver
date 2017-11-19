@@ -4,3 +4,8 @@ Solver::Solver()
 {
 
 }
+
+void Solver::solve()
+{
+
+}
