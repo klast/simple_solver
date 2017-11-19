@@ -21,6 +21,7 @@ void Model::read()
 
 void Model::init()
 {
+    // TODO: вычислить шаг по времени по условию Куранта
     nx = reader.input_constants["nx"];
     ny = reader.input_constants["ny"];
     solver.model_directory = reader.model_directory;

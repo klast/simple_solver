@@ -16,9 +16,26 @@ class Model
 public:
     Model();
 
+    //! TODO: Критерий Куранта
+
+    /*!
+     * \brief Полный цикл от считывания до конечного решения
+     */
     void simulate();
+
+    /*!
+     * \brief Считывание модели
+     */
     void read();
+
+    /*!
+     * \brief Инициализация класса Solver из переменных класса Reader
+     */
     void init();
+
+    /*!
+     * \brief Вызов решения из класса Solver
+     */
     void solve();
 
 //! элементы

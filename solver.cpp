@@ -4,25 +4,21 @@
 
 Solver::Solver()
 {
-    number_of_time_steps = 5;
+    num_global_steps = 5;
     nx = 500;
     ny = 500;
 }
 
-void Solver::solve()
+void Solver::hdf5_test_solve(int time_step)
 {
-    for(int time_step = 0; time_step < number_of_time_steps; time_step++)
-    {
-        mat A = randu<mat>(nx, ny);
-        mat B = randu<mat>(nx, ny);
-        mat result = arma::solve(A, B);
-        qDebug() << "Step " << time_step << "calculated\n";
-        QString step_file = QString("step.%1.h5").arg(QString::number(time_step));
-        QFile(step_file).remove();
-        result.save(hdf5_name(step_file.toStdString(), "result"));
-        qDebug() << "Step " << time_step << "saved\n";
-    }
-    finalize_hdf5();
+    mat A = randu<mat>(nx, ny);
+    mat B = randu<mat>(nx, ny);
+    mat result = arma::solve(A, B);
+    qDebug() << "Step " << time_step << "calculated\n";
+    QString step_file = QString("step.%1.h5").arg(QString::number(time_step));
+    QFile(step_file).remove();
+    result.save(hdf5_name(step_file.toStdString(), "result"));
+    qDebug() << "Step " << time_step << "saved\n";
 }
 
 void Solver::finalize_hdf5()
@@ -40,7 +36,7 @@ void Solver::finalize_hdf5()
     {
         qDebug() << "Can't create group\n";
     }
-    for(int i = 0; i < number_of_time_steps; i++)
+    for(int i = 0; i < num_global_steps; i++)
     {
         QString step_file_name = QString("step.%1.h5").arg(QString::number(i));
         step_file = H5Fopen(step_file_name.toStdString().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
@@ -63,5 +59,62 @@ void Solver::finalize_hdf5()
     }
     H5Gclose(group_id);
     H5Fclose(result_file);
+}
+
+void Solver::solve()
+{
+    for (int step = 0; step < num_global_steps; step++)
+    {
+
+        double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
+        //inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
+        hdf5_test_solve(step);
+        // TODO: обновляем необходимые данные в классе Solver
+
+    }
+    finalize_hdf5();
+    //! TODO(Вова): объединить h5 с каждого шага в один, или сразу всё в один h5 записывать
+}
+
+void Solver::inner_solve(double begin_time, double end_time)
+{
+
+    // Если глобальный временной шаг меньше шага по Куранту
+    if ((end_time - begin_time) < dt)
+        dt = end_time - begin_time;
+
+    double time = begin_time; // FIX: переименовать
+    while (time < end_time)
+    {
+
+        // Уменьшаем шаг по времени, если он перескакивает конечное время расчёта
+        if ((end_time - time) < dt)
+            dt = end_time - time;
+
+        double residual = 1.0; // невязка
+        while(residual < epsilon)
+        {
+
+            // TODO: выполняем расчёт явной схемой
+            // TODO: выполняем расчёт неявной схемой
+            residual = calc_residual();
+
+        };
+
+        // TODO: обновляем необходимые данные класса Solver
+
+        time += dt;
+
+    };
+
+}
+
+double Solver::calc_residual()
+{
+
+    // TODO: реализовать расчёт невязки
+
+    return 1.0;
+
 }
 
