@@ -30,13 +30,12 @@ public:
     QString title;
     //или std::string, как хочешь
     void read();
-    void read_datafile();
     void read_1d_array(QString keyword_name);
+
+    QMap<QString, QVector<QVector<float>>> input_2d_arrays;
     QMap<QString, QVector<float>> input_1d_arrays;
     QMap<QString, float> input_constants;
     QFile datafile, current_file;
-    //! будут 4 файла вроде
-    QFile second_file, third_file, fourth_file;
     QDir model_directory;
 
 };
