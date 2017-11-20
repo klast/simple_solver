@@ -62,10 +62,10 @@ private:
     // TODO: возможно, нужно отделить данные на предыдущ. и следующ. внутренних итерациях в отдельный класс InnerState
     vector_double_2d oil_press; // давление нефти [1 Па]
     vector_double_2d water_press; // давление воды [1 Па]
-    vector_double_2d oil_press_prev;
-    vector_double_2d oil_press_next;
-    vector_double_2d water_press_prev;
-    vector_double_2d water_press_next;
+    vector_double_2d oil_press_prev; // давление нефти на n внутренней итерации [1 Па]
+    vector_double_2d oil_press_next; // давление нефти на n + 1 внутренней итерации [1 Па]
+    vector_double_2d water_press_prev; // давление воды на n внутренней итерации [1 Па]
+    vector_double_2d water_press_next; // давление воды на n + 1 внутренней итерации [1 Па]
     vector_double_2d pressure; //! давление
     vector_double_2d tops; //! глубины ячеек
     vector_double_2d porosity; //! пористость
@@ -95,6 +95,8 @@ private:
     std::vector<double> krw_init;
     std::vector<double> krow_init;
     std::vector<double> pcow_init;
+    
+    static const int MAX_INNER_ITERATIONS = 100; // Максимальное число внутренних итераций
 
 public:
 
@@ -118,6 +120,10 @@ public:
      * \return Значение невязки
      */
     double calc_residual();
+    /*!
+     * \brief Рассчитать по явной схеме водонасыщенность
+     */
+    void explicit_scheme_calc();
 
     /*!
      * \brief Инициализация данных
