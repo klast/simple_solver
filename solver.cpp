@@ -14,7 +14,7 @@ void Solver::solve()
     for (int step = 0; step < num_global_steps; step++)
     {
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
-        inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
+        //inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
         hdf5_worker.hdf5_test_solve(step, nx, ny);
         // TODO: обновляем необходимые данные в классе Solver
     }
