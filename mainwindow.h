@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QtCharts/QtCharts>
+QT_CHARTS_USE_NAMESPACE
+using namespace QtCharts;
 
 #include "Model.h"
 

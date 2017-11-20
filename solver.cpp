@@ -7,7 +7,6 @@ Solver::Solver()
 
 void Solver::solve()
 {
-
     for (int step = 0; step < num_global_steps; step++)
     {
 
