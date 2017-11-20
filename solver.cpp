@@ -36,12 +36,23 @@ void Solver::inner_solve(double begin_time, double end_time)
             dt = end_time - time;
 
         double residual = 1.0; // невязка
-        while(residual < epsilon)
+        int num_inner_it = 0; // номер внутренней итерации
+        while((residual >= epsilon) && (num_inner_it < MAX_INNER_ITERATIONS))
         {
 
-            // TODO: выполняем расчёт явной схемой
+            explicit_scheme_calc();
             // TODO: выполняем расчёт неявной схемой
             residual = calc_residual();
+
+            num_inner_it++;
+
+        };
+
+        if (num_inner_it == MAX_INNER_ITERATIONS)
+        {
+
+            // TODO: сбросить результаты до начального состояния
+            continue;
 
         };
 
@@ -59,5 +70,25 @@ double Solver::calc_residual()
     // TODO: реализовать расчёт невязки
 
     return 1.0;
+
+}
+
+void Solver::explicit_scheme_calc()
+{
+    // TODO: рассчитать все параметры, зависящие от водонасыщенности s_w, при s_w = s_w(t_{n + 1})
+
+    for (int node_x = 0; node_x < nx; node_x++)
+        for (int node_y = 0; node_y < ny; node_y++)
+        {
+            // double volume = dx * dy * dz;
+            // double coeff_1 = dt * compress_oil / porosity / volume;
+
+            double T_x1_x = dy * dz / dx * k_relat_water[node_x][node_y] * k_relat_water[node_x + 1][node_y] / (k_relat_water[node_x][node_y] + k_relat_water[node_x + 1][node_y]) / 0.5 / viscosity_water / compress_water;
+            double lambda_x1_x = k_absol[node_x][node_y] * k_absol[node_x + 1][node_y] / (k_absol[node_x][node_y] + k_absol[node_x + 1][node_y]) / 0.5;
+            double potential_x1_x = water_press_prev[node_x + 1][node_y] - water_press_prev[node_x][node_y] - gravity * density_water * (heights[node_x + 1][node_y] - heights[node_x][node_y]);
+            double coeff_x1_x = T_x1_x * lambda_x1_x * potential_x1_x;
+
+            // water_press_next[node_x][node_y] =
+        };
 
 }

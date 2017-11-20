@@ -33,10 +33,10 @@ private:
     // TODO: возможно, нужно отделить данные на предыдущ. и следующ. внутренних итерациях в отдельный класс InnerState
     std::vector< std::vector<double> > oil_press; // давление нефти [1 Па]
     std::vector< std::vector<double> > water_press; // давление воды [1 Па]
-    std::vector< std::vector<double> > oil_press_prev;
-    std::vector< std::vector<double> > oil_press_next;
-    std::vector< std::vector<double> > water_press_prev;
-    std::vector< std::vector<double> > water_press_next;
+    std::vector< std::vector<double> > oil_press_prev; // давление нефти на n внутренней итерации [1 Па]
+    std::vector< std::vector<double> > oil_press_next; // давление нефти на n + 1 внутренней итерации [1 Па]
+    std::vector< std::vector<double> > water_press_prev; // давление воды на n внутренней итерации [1 Па]
+    std::vector< std::vector<double> > water_press_next; // давление воды на n + 1 внутренней итерации [1 Па]
 
     // Шаги
     double dx; // Шаг сетки по оси OX [1 м]
@@ -49,6 +49,9 @@ private:
     double T; // Конечное время расчёта [с]
     double num_global_steps; // Число глобальных шагов
     double epsilon; // Число epsilon (погрешность)
+    static const int MAX_INNER_ITERATIONS = 100; // Максимальное число внутренних итераций
+    int nx; // Число узлов по оси OX
+    int ny; // Число узлов по оси OY
 
 public:
 
@@ -72,6 +75,10 @@ public:
      * \return Значение невязки
      */
     double calc_residual();
+    /*!
+     * \brief Рассчитать по явной схеме водонасыщенность
+     */
+    void explicit_scheme_calc();
 
 };
 
