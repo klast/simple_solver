@@ -58,8 +58,9 @@ win32: LIBS += -L$$PWD/armadillo/lib_win64/ -lblas_win64_MT
 INCLUDEPATH += $$PWD/armadillo/lib_win64
 DEPENDPATH += $$PWD/armadillo/lib_win64
 
-win32: LIBS += -L'C:/Program Files/HDF_Group/HDF5/1.8.18/lib/' -lszip -lzlib -lhdf5 -lhdf5_cpp
 
-INCLUDEPATH += 'C:/Program Files/HDF_Group/HDF5/1.8.18/include'
-DEPENDPATH += 'C:/Program Files/HDF_Group/HDF5/1.8.18/include'
 
+win32: LIBS += -L$$PWD/../hdf5-1.8.18/lib/ -lszip -lzlib -lhdf5 -lhdf5_cpp
+
+INCLUDEPATH += $$PWD/../hdf5-1.8.18/include
+DEPENDPATH += $$PWD/../hdf5-1.8.18/include
