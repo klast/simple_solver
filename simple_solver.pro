@@ -29,14 +29,16 @@ SOURCES += \
         reader.cpp \
         model.cpp \
         solver.cpp \
-        graphicsform.cpp
+        graphicsform.cpp \
+        hdf5_io.cpp
 
 HEADERS += \
         mainwindow.h \
         reader.h \
         model.h \
         solver.h \
-        graphicsform.h
+        graphicsform.h \
+        hdf5_io.h
 
 CONFIG += c++11
 
@@ -57,8 +59,6 @@ win32: LIBS += -L$$PWD/armadillo/lib_win64/ -lblas_win64_MT
 
 INCLUDEPATH += $$PWD/armadillo/lib_win64
 DEPENDPATH += $$PWD/armadillo/lib_win64
-
-
 
 win32: LIBS += -L$$PWD/../hdf5-1.8.18/lib/ -lszip -lzlib -lhdf5 -lhdf5_cpp
 

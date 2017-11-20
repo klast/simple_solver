@@ -1,6 +1,7 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
+#include "hdf5_io.h"
 
 #include <QString>
 #include <QDebug>
@@ -79,15 +80,13 @@ public:
      * \param end_time - конечное время расчёта [с]
      */
     void inner_solve(double begin_time, double end_time);
+
     /*!
      * \brief Рассчитать невязку
      * \return Значение невязки
      */
     double calc_residual();
 
-    void hdf5_test_solve(int time_step);
-
-    void finalize_hdf5();
 
 //! TODO: переписать связи с тем, что появился solver_core
 //! Поля
@@ -95,6 +94,7 @@ public:
     int nx, ny;
     QDir model_directory;
     QString datafile_name;
+    hdf5_io hdf5_worker;
 
 
 };
