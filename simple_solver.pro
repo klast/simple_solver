@@ -28,16 +28,15 @@ SOURCES += \
         mainwindow.cpp \
         reader.cpp \
         model.cpp \
-        solver.cpp \
-        graphicsform.cpp
+        solver.cpp
 
 HEADERS += \
         mainwindow.h \
         reader.h \
         model.h \
         solver.h \
-        graphicsform.h
 
 FORMS += \
-        mainwindow.ui \
-        graphicsform.ui
+        mainwindow.ui
+
+INCLUDEPATH += $$PWD/eigen
