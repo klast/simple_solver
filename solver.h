@@ -23,7 +23,8 @@ private:
     double gravity; // ускорение свободного падения [м / с^2]
 
     // Параметры, зависящие от водонасыщенности s_w
-    std::vector< std::vector<double> > k_absol; // абсолютная проницаемость [1 Д = 1 мкм^2]
+    std::vector< std::vector<double> > k_absol_x; // абсолютная проницаемость по OX [1 Д = 1 мкм^2]
+    std::vector< std::vector<double> > k_absol_y; // абсолютная проницаемость по OY [1 Д = 1 мкм^2]
     std::vector< std::vector<double> > k_relat_oil; // относительная проницаемость нефти []
     std::vector< std::vector<double> > k_relat_water; // относительная проницаемость воды []
     std::vector< std::vector<double> > heights; // высоты D(x, y) [1 м]
@@ -46,7 +47,7 @@ private:
 
     // Разное
     // TODO: правильно "распределить" переменные
-    double T; // Конечное время расчёта [с]
+    double T; // Конечное время расчёта [1 с]
     double num_global_steps; // Число глобальных шагов
     double epsilon; // Число epsilon (погрешность)
     static const int MAX_INNER_ITERATIONS = 100; // Максимальное число внутренних итераций
