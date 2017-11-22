@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui charts
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -29,7 +29,6 @@ SOURCES += \
         reader.cpp \
         model.cpp \
         solver.cpp \
-        graphicsform.cpp \
         hdf5_io.cpp
 
 HEADERS += \
@@ -37,30 +36,21 @@ HEADERS += \
         reader.h \
         model.h \
         solver.h \
-        graphicsform.h \
         hdf5_io.h
 
 CONFIG += c++11
 
-DEFINES += ARMA_USE_HDF5 H5_BUILT_AS_DYNAMIC_LIB
-
-INCLUDEPATH += armadillo\include
+DEFINES += H5_BUILT_AS_DYNAMIC_LIB
 
 FORMS += \
         mainwindow.ui \
-        graphicsform.ui
-
-win32: LIBS += -L$$PWD/armadillo/lib_win64/ -llapack_win64_MT
-
-INCLUDEPATH += $$PWD/armadillo/lib_win64
-DEPENDPATH += $$PWD/armadillo/lib_win64
-
-win32: LIBS += -L$$PWD/armadillo/lib_win64/ -lblas_win64_MT
-
-INCLUDEPATH += $$PWD/armadillo/lib_win64
-DEPENDPATH += $$PWD/armadillo/lib_win64
 
 win32: LIBS += -L$$PWD/../hdf5-1.8.18/lib/ -lszip -lzlib -lhdf5 -lhdf5_cpp
 
 INCLUDEPATH += $$PWD/../hdf5-1.8.18/include
 DEPENDPATH += $$PWD/../hdf5-1.8.18/include
+
+FORMS += \
+        mainwindow.ui
+
+INCLUDEPATH += $$PWD/eigen

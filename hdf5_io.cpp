@@ -5,7 +5,7 @@ hdf5_io::hdf5_io()
 
 }
 
-void hdf5_io::hdf5_test_solve(int time_step, int nx, int ny)
+/*void hdf5_io::hdf5_test_solve(int time_step, int nx, int ny)
 {
     mat A = randu<mat>(nx, ny);
     mat B = randu<mat>(nx, ny);
@@ -61,4 +61,4 @@ void hdf5_io::finalize_hdf5(QString datafile_name, int num_global_steps)
     H5Gclose(group_id[CUBES_TO_EXPORT::PRESSURE]);
     H5Gclose(group_id[CUBES_TO_EXPORT::SATURATION]);
     H5Fclose(result_file);
-}
+}*/

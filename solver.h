@@ -7,10 +7,6 @@
 #include <QDebug>
 #include <QDir>
 
-#include <armadillo>
-
-using namespace arma;
-
 // Стандартные библиотеки C++
 #include <vector>
 

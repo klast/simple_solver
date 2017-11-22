@@ -15,10 +15,10 @@ void Solver::solve()
     {
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
         //inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
-        hdf5_worker.hdf5_test_solve(step, nx, ny);
+        //hdf5_worker.hdf5_test_solve(step, nx, ny);
         // TODO: обновляем необходимые данные в классе Solver
     }
-    hdf5_worker.finalize_hdf5(datafile_name, num_global_steps);
+   // hdf5_worker.finalize_hdf5(datafile_name, num_global_steps);
     //! TODO(Вова): объединить h5 с каждого шага в один, или сразу всё в один h5 записывать
 }
 
