@@ -21,6 +21,9 @@ void Solver::solve()
         hdf5_worker.hdf5_test_solve(step);
         // TODO: обновляем необходимые данные в классе Solver
     }
+    std::vector<double> * pressure_data = new std::vector<double>();
+    hdf5_worker.get_cube_on_timestep("pressure_cube", 9, pressure_data);
+    qDebug() << *pressure_data;
    // hdf5_worker.finalize_hdf5(datafile_name, num_global_steps);
     //! TODO(Вова): объединить h5 с каждого шага в один, или сразу всё в один h5 записывать
 }

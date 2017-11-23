@@ -37,6 +37,8 @@ public:
 
     void openfile();
 
+    void get_cube_on_timestep(std::string cube_name, int time_step, std::vector<double> *cube);
+
     //void copy_cube_on_timestep(CUBES_TO_EXPORT cube, int time_step);
 
    // void finalize_hdf5(QString datafile_name, int num_global_steps);
