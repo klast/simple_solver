@@ -52,6 +52,7 @@ void Reader::read()
               title = datafile.readLine();
               title = title.simplified();
               title = title.remove(QChar('"'), Qt::CaseInsensitive);
+              qDebug() << "Title =" << title;
          }
          else if (str.contains ("dimens", Qt::CaseInsensitive))
          {
@@ -64,6 +65,8 @@ void Reader::read()
               ny = s1.toFloat();
               input_constants["nx"] = nx;
               input_constants["ny"] = ny;
+              qDebug() << "nx =" << nx;
+              qDebug() << "ny =" << ny;
          }
          else if(str.contains("poro", Qt::CaseInsensitive))
          {
@@ -71,13 +74,9 @@ void Reader::read()
          }
          else if(str != "\r\n")
          {
-              qDebug() << "Необработанная строчка + " << str;
+              qDebug() << "Необработанная строчка" << str;
          }
      }
-     qDebug() << title;
-     qDebug() << nx;
-     qDebug() << ny;
-     qDebug() << "Код сюда дошел";
 }
 
 void Reader::read_1d_array(QString keyword_name)
@@ -88,32 +87,38 @@ void Reader::read_1d_array(QString keyword_name)
     {
         tmp = datafile.readLine();
         if (tmp[0] == "/") break;
-        else{
+        else
+        {
             QStringList my_row = tmp.split(' ');
             for(QString item: my_row)
             {
-                if (!tmp.contains("*") ){
+                if (!tmp.contains("*") )
+                {
                     p = item.toFloat();
                     this_array.push_back(p);
                 }
-                else {
+                else
+                {
                     QStringList my_row = item.split('*');
-                      for(QString item: my_row){
-                       s.append(item+" ");}
-                       s = s.prepend(" ");
-                       s1 = s.section(' ', 1, 1);
-                        p = s1.toFloat();
-                        s1 = s.section(' ', 2, 2);
-                        pp = s1.toFloat();
-                        for (i = int(p); i!=0; i--){
-                        this_array.push_back(pp);
-                        }s.clear();
-                       }
-                      }
-                     }
+                    for(QString item: my_row)
+                    {
+                        s.append(item+" ");
                     }
-
-    qDebug() << this_array;
+                    s = s.prepend(" ");
+                    s1 = s.section(' ', 1, 1);
+                    p = s1.toFloat();
+                    s1 = s.section(' ', 2, 2);
+                    pp = s1.toFloat();
+                    for (i = int(p); i!=0; i--)
+                    {
+                        this_array.push_back(pp);
+                    }
+                    s.clear();
+                }
+            }
+        }
+    }
+    qDebug() << keyword_name << "=" << this_array;
     input_1d_arrays[keyword_name] = this_array;
 }
 
