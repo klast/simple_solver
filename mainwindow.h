@@ -21,6 +21,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+    void create_pvt_features_graph();
+    void create_graph(QChart* chart, QString title);
+
 private slots:
     void handleButton();
 
