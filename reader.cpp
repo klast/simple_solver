@@ -6,15 +6,30 @@ Reader::Reader()
 
 }
 
+bool Reader::set_datafile(QString &_filename)
+{
+    if(open(_filename))
+    {
+        datafile.setFileName(_filename);
+        datafile.open(QIODevice::ReadOnly);
+        QFileInfo info1(datafile);
+        model_directory = info1.absoluteDir();
+        return true;
+    }
+    else
+        return false;
+}
+
 /*!
   \brief Функция открытия файла
   \param _filename - имя файла
  */
-bool Reader::open(QString _filename)
+bool Reader::open(QString &_filename)
 {
-    datafile.setFileName(_filename);
+    current_file.setFileName(_filename);
+    bool is_opened = current_file.open(QIODevice::ReadOnly);
     //Пытаемся открыть файл в режиме для чтения
-    if(!datafile.open(QIODevice::ReadOnly))
+    if(!is_opened)
     {
         qDebug() << "Ошибка открытия файла";
         return false;
@@ -22,7 +37,6 @@ bool Reader::open(QString _filename)
     else
     {
         qDebug() << "Файл открыт";
-        read();
         return true;
     }    
 }
@@ -33,35 +47,37 @@ void Reader::read()
      while (!datafile.atEnd())
      {
          str = datafile.readLine();
-         if (str.contains ("title", Qt::CaseInsensitive)) {
-                 title = datafile.readLine();
-                 title = title.simplified();
-                 title = title.remove(QChar('"'), Qt::CaseInsensitive);
-             }
-          else if (str.contains ("dimens", Qt::CaseInsensitive))  {
-                 s = datafile.readLine();
-                 s = s.trimmed();
-                 s = s.prepend(" ");
-                 s1 = s.section(' ', 1, 1);
-                 nx = s1.toFloat();
-                 s1 = s.section(' ', 2, 2);
-                 ny = s1.toFloat();
-                 input_constants["nx"] = nx;
-                 input_constants["ny"] = ny;
-             }
-          else if(str.contains("poro", Qt::CaseInsensitive))
-          {
+         if (str.contains ("title", Qt::CaseInsensitive))
+         {
+              title = datafile.readLine();
+              title = title.simplified();
+              title = title.remove(QChar('"'), Qt::CaseInsensitive);
+         }
+         else if (str.contains ("dimens", Qt::CaseInsensitive))
+         {
+              s = datafile.readLine();
+              s = s.trimmed();
+              s = s.prepend(" ");
+              s1 = s.section(' ', 1, 1);
+              nx = s1.toFloat();
+              s1 = s.section(' ', 2, 2);
+              ny = s1.toFloat();
+              input_constants["nx"] = nx;
+              input_constants["ny"] = ny;
+         }
+         else if(str.contains("poro", Qt::CaseInsensitive))
+         {
               read_1d_array("poro");
-          }
-          else if(str != "\r\n")
-          {
+         }
+         else if(str != "\r\n")
+         {
               qDebug() << "Необработанная строчка + " << str;
-          }
+         }
      }
-   qDebug() << title;
-   qDebug() << nx;
-   qDebug() << ny;
-   qDebug() << "Код сюда дошел";
+     qDebug() << title;
+     qDebug() << nx;
+     qDebug() << ny;
+     qDebug() << "Код сюда дошел";
 }
 
 void Reader::read_1d_array(QString keyword_name)
@@ -104,6 +120,7 @@ void Reader::read_1d_array(QString keyword_name)
 void Reader::close()
 {
     datafile.close();
+    current_file.close();
 }
 
 

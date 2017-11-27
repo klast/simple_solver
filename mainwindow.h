@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QtCharts/QtCharts>
+QT_CHARTS_USE_NAMESPACE
+using namespace QtCharts;
 
 #include "Model.h"
 
@@ -18,6 +21,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+    void create_pvt_features_graph();
+    void create_graph(QChart* chart, QString title);
+
 private slots:
     void handleButton();
 
