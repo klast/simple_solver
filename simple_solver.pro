@@ -50,7 +50,6 @@ win32: LIBS += -L$$PWD/../hdf5-1.8.18/lib/ -lszip -lzlib -lhdf5 -lhdf5_cpp
 INCLUDEPATH += $$PWD/../hdf5-1.8.18/include
 DEPENDPATH += $$PWD/../hdf5-1.8.18/include
 
-FORMS += \
-        mainwindow.ui
-
 INCLUDEPATH += $$PWD/eigen
+
+INCLUDEPATH += $$PWD/highfive/include
