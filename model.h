@@ -4,7 +4,7 @@
 #include "solver.h"
 #include "reader.h"
 #include <QFile>
-#include <QDataStream>
+#include <QTextStream>
 
 
 /*!
@@ -46,7 +46,7 @@ public:
     int nx, ny, nt;
     QString title;
     QFile logfile;
-    QDataStream debug;
+    QTextStream debug;
 
 };
 

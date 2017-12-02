@@ -7,17 +7,21 @@ Lib_simple_solver::Lib_simple_solver()
     ny = 100;
     nt = 15;
     logfile.setFileName("solver.log");
-    logfile.open(QFile::WriteOnly);
+    logfile.open(QIODevice::WriteOnly | QIODevice::Text);
     debug.setDevice(&logfile);
     debug << "Constructor";
+    qDebug() << "Constructor";
 }
 
-bool Lib_simple_solver::set_datafile(QString filename)
+bool LIB_SIMPLE_SOLVERSHARED_EXPORT Lib_simple_solver::set_datafile(QString filename)
 {
-   return reader.set_datafile(filename);
+    bool result = reader.set_datafile(filename);
+    debug << "setting datafile";
+    logfile.close();
+    return result;
 }
 
-void Lib_simple_solver::simulate()
+void LIB_SIMPLE_SOLVERSHARED_EXPORT Lib_simple_solver::simulate()
 {
     debug << "Trying to simulate";
     read();

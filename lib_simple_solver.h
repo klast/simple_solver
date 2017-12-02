@@ -4,7 +4,7 @@
 #include "lib_simple_solver_global.h"
 #include "model.h"
 #include <QFile>
-#include <QDataStream>
+#include <QTextStream>
 
 class LIB_SIMPLE_SOLVERSHARED_EXPORT Lib_simple_solver : Model
 {
