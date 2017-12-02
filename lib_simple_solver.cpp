@@ -12,7 +12,7 @@ Lib_simple_solver::Lib_simple_solver()
     debug << "Constructor";
 }
 
-bool Lib_simple_solver::set_datafile(QString &filename)
+bool Lib_simple_solver::set_datafile(QString filename)
 {
    return reader.set_datafile(filename);
 }
@@ -23,20 +23,4 @@ void Lib_simple_solver::simulate()
     read();
     init();
     solve();
-}
-
-void Lib_simple_solver::read()
-{
-    reader.read();
-}
-
-void Lib_simple_solver::init()
-{
-    nx = reader.input_constants["nx"];
-    ny = reader.input_constants["ny"];
-}
-
-void Lib_simple_solver::solve()
-{
-    solver.solve();
 }

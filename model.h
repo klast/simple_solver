@@ -3,6 +3,8 @@
 
 #include "solver.h"
 #include "reader.h"
+#include <QFile>
+#include <QDataStream>
 
 
 /*!
@@ -43,6 +45,8 @@ public:
     Reader reader;
     int nx, ny, nt;
     QString title;
+    QFile logfile;
+    QDataStream debug;
 
 };
 

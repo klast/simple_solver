@@ -27,13 +27,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         lib_simple_solver.cpp \
         reader.cpp \
-        solver.cpp
+        solver.cpp \
+        model.cpp
 
 HEADERS += \
         lib_simple_solver.h \
         lib_simple_solver_global.h \ 
         reader.h \
-        solver.h
+        solver.h \
+        model.h
 
 INCLUDEPATH += $$PWD/eigen
 
