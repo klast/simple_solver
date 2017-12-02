@@ -8,6 +8,7 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
+from ctypes import *
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
     def setupUi(self, MainWindow):
@@ -24,6 +25,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(10, 10, 101, 23))
         self.pushButton.setCheckable(True)
         self.pushButton.setObjectName("pushButton")
+        self.pushButton.clicked.connect(self.handleButton)
         self.tabWidget.addTab(self.init_tab, "")
         self.pressure_animation = QtWidgets.QWidget()
         self.pressure_animation.setObjectName("pressure_animation")
@@ -115,6 +117,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.label.setText(_translate("MainWindow", "ГРАФИК PVT"))
         self.label_2.setText(_translate("MainWindow", "ГРАФИК КАПИЛЛЯРКИ"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.pvt_features), _translate("MainWindow", "PVT свойства"))
+        
+    def handleButton(self):
+        self.filename = QFileDialog.getOpenFileName(self, "Открыть файл модели", "", "DATA файл (*.DATA);;Все файлы(*)")
+        self.lib = cdll.LoadLibrary("lib_simple_solver.dll")
+        
 
 if __name__ == '__main__':
     
