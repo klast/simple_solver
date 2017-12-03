@@ -9,6 +9,7 @@
 #include <QByteArray>
 #include <QTextStream>
 #include <QMap>
+#include "logger.h"
 
 /*!
  \class Reader

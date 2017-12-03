@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       -= gui
+QT       += widgets
 
 TARGET = lib_simple_solver
 TEMPLATE = lib
@@ -28,14 +29,16 @@ SOURCES += \
         lib_simple_solver.cpp \
         reader.cpp \
         solver.cpp \
-        model.cpp
+        model.cpp \
+        logger.cpp
 
 HEADERS += \
         lib_simple_solver.h \
         lib_simple_solver_global.h \ 
         reader.h \
         solver.h \
-        model.h
+        model.h \
+        logger.h
 
 INCLUDEPATH += $$PWD/eigen
 

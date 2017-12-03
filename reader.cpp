@@ -31,12 +31,12 @@ bool Reader::open(QString &_filename)
     //Пытаемся открыть файл в режиме для чтения
     if(!is_opened)
     {
-        qDebug() << "Ошибка открытия файла";
+        qInfo(logRead()) << "Ошибка открытия файла";
         return false;
     }
     else
     {
-        qDebug() << "Файл открыт";
+        qInfo(logRead()) << "Файл открыт";
         return true;
     }    
 }
@@ -52,7 +52,7 @@ void Reader::read()
               title = datafile.readLine();
               title = title.simplified();
               title = title.remove(QChar('"'), Qt::CaseInsensitive);
-              qDebug() << "Title =" << title;
+              qInfo(logRead()) << "Title =" << title;
          }
          else if (str.contains ("dimens", Qt::CaseInsensitive))
          {
@@ -65,8 +65,8 @@ void Reader::read()
               ny = s1.toFloat();
               input_constants["nx"] = nx;
               input_constants["ny"] = ny;
-              qDebug() << "nx =" << nx;
-              qDebug() << "ny =" << ny;
+              qInfo(logRead()) << "nx =" << nx;
+              qInfo(logRead()) << "ny =" << ny;
          }
          else if(str.contains("poro", Qt::CaseInsensitive))
          {
@@ -74,7 +74,7 @@ void Reader::read()
          }
          else if(str != "\r\n")
          {
-              qDebug() << "Необработанная строчка" << str;
+              qInfo(logRead()) << "Необработанная строчка" << str;
          }
      }
 }
@@ -118,7 +118,7 @@ void Reader::read_1d_array(QString keyword_name)
             }
         }
     }
-    qDebug() << keyword_name << "=" << this_array;
+    qInfo(logRead()) << keyword_name << "=" << this_array;
     input_1d_arrays[keyword_name] = this_array;
 }
 

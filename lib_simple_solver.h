@@ -12,7 +12,8 @@
 extern "C"
 {
 
-    static QString datafile_name;
+    QString datafile_name;
+    Model model;
     LIB_SIMPLE_SOLVERSHARED_EXPORT int get_2()
     {
         return 2;
@@ -20,6 +21,8 @@ extern "C"
     LIB_SIMPLE_SOLVERSHARED_EXPORT void set_datafile(char *filename)
     {
         datafile_name = QString(filename);
+        model.reader.set_datafile(datafile_name);
+        model.simulate();
     }
     LIB_SIMPLE_SOLVERSHARED_EXPORT void get_datafile(char *result)
     {
@@ -33,7 +36,6 @@ class LIB_SIMPLE_SOLVERSHARED_EXPORT Lib_simple_solver
 
 public:
     Lib_simple_solver();
-    Model model;
 
 };
 

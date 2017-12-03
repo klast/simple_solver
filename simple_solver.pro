@@ -28,13 +28,15 @@ SOURCES += \
         mainwindow.cpp \
         reader.cpp \
         model.cpp \
-        solver.cpp
+        solver.cpp \
+        logger.cpp
 
 HEADERS += \
         mainwindow.h \
         reader.h \
         model.h \
         solver.h \
+        logger.h
 
 FORMS += \
         mainwindow.ui
