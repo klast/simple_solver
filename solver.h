@@ -3,6 +3,7 @@
 
 // Стандартные библиотеки C++
 #include <vector>
+#include "logger.h"
 
 /*!
  \class Solver

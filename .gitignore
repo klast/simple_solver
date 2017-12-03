@@ -1,1 +1,6 @@
 *.pro.user
+*.dll
+*.log
+*.exp
+*.lib
+*.a

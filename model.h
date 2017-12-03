@@ -2,7 +2,15 @@
 #define MODEL_H
 
 #include "solver.h"
+//#include <QApplication>
+#include <QtGlobal>
 #include "reader.h"
+#include "logger.h"
+#include <QScopedPointer>
+#include <QFile>
+#include <QTextStream>
+#include <QLoggingCategory>
+#include <QDateTime>
 
 
 /*!
@@ -10,6 +18,9 @@
  \brief Управляющий класс, в котором будут вызываться чтение, вычисление и тд
  через объекты вспомогательных подклассов
 */
+
+static QScopedPointer<QFile> logFile;
+
 class Model
 {
 //! функции
@@ -38,11 +49,13 @@ public:
      */
     void solve();
 
+    static void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+
 //! элементы
     Solver solver;
     Reader reader;
     int nx, ny, nt;
-    QString title;
+    QString title;    
 
 };
 
