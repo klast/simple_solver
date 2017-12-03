@@ -9,7 +9,7 @@ QT       -= gui
 TARGET = lib_simple_solver
 TEMPLATE = lib
 CONFIG += dll
-DLLDESTDIR = $$PWD
+DESTDIR = $$PWD
 
 DEFINES += LIB_SIMPLE_SOLVER_LIBRARY
 

@@ -120,7 +120,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
     def handleButton(self):
         self.filename = QFileDialog.getOpenFileName(self, "Открыть файл модели", "", "DATA файл (*.DATA);;Все файлы(*)")
-        self.lib = windll.LoadLibrary("lib_simple_solver.dll")
+        self.lib = cdll.LoadLibrary("lib_simple_solver.dll")
+        self.lib.set_datafile.argtypes = [c_char_p]        
+        self.lib.set_datafile(self.filename[0].encode('UTF-8'))
+        a = create_string_buffer(100)
+        self.lib.get_datafile(a)
+        print(a.value)
+        sys.exit(0)
+        
         
 
 if __name__ == '__main__':
