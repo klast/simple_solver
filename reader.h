@@ -59,8 +59,8 @@ public:
     QString title;//! название модели, нужно ли оно???
 
     QVector<QSharedPointer<QFile>> input_files;
-    QMap<QString, QVector<float>> input_1d_arrays;//! входные массивы
-    QMap<QString, float> input_constants;//! входные константы
+    QMap<QString, QVector<double>> input_1d_arrays;//! входные массивы
+    QMap<QString, double> input_constants;//! входные константы
     QFile * current_file;//! входные 2 файла, переделать под 4
     QDir model_directory;//! директория в которой находится data файл
 };

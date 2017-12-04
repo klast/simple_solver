@@ -1,5 +1,5 @@
 #include "reader.h"
-
+#include <QRegExp>
 
 Reader::Reader()
 {
@@ -25,15 +25,18 @@ bool Reader::set_file(filetypes type, QString &_filename)
 
 void Reader::read()
 {
+     qInfo(logRead()) << "НАЧИНАЕМ СЧИТЫВАНИЕ";
      QString str="";
      QString s, s1;
      current_file = input_files[0].data();
+     qInfo(logRead()) << "ОТКРЫТ ФАЙЛ" << current_file->fileName();
      read_1d_array("wellinfo");
      for(int i = 1; i < input_files.size(); i++)
      {
          if(!input_files[i])
              continue;
          current_file = input_files[i].data();
+         qInfo(logRead()) << "ОТКРЫТ ФАЙЛ" << current_file->fileName();
          while(!current_file->atEnd())
          {
              str = current_file->readLine();
@@ -75,32 +78,38 @@ void Reader::read()
              }
              else if(str != "\r\n")
              {
-                  qInfo(logRead()) << "Необработанная строчка" << str;
+                  qWarning(logRead()) << "необработанная строчка" << str;
              }
          }
      }
-     qInfo(logRead()) << "Считывание закончено";
+     qInfo(logRead()) << "СЧИТЫВАНИЕ ЗАКОНЧЕНО";
 }
 
 void Reader::read_1d_array(QString keyword_name)
 {
-    QVector<float> this_array;
+    QVector<double> this_array;
     QString tmp, s, s1;
-    float p, pp;
+    double p, pp;
     int i;
     p=0;
+    qDebug(logRead()) << "Считываю" << keyword_name;
     while(true)
     {
+        if(current_file->atEnd())
+            break;
         tmp = current_file->readLine();
-        if (tmp[0] == "/" || current_file->atEnd()) break;
+        if (tmp[0] == "/")
+            break;
         else
         {
-            QStringList my_row = tmp.split(' ');
+            QStringList my_row = tmp.split(QRegExp("\\s"));
             for(QString item: my_row)
             {
-                if (!tmp.contains("*") )
+                if(item == "")
+                    continue;
+                if (!item.contains("*") )
                 {
-                    p = item.toFloat();
+                    p = item.toDouble();
                     this_array.push_back(p);
                 }
                 else
@@ -112,9 +121,9 @@ void Reader::read_1d_array(QString keyword_name)
                     }
                     s = s.prepend(" ");
                     s1 = s.section(' ', 1, 1);
-                    p = s1.toFloat();
+                    p = s1.toDouble();
                     s1 = s.section(' ', 2, 2);
-                    pp = s1.toFloat();
+                    pp = s1.toDouble();
                     for (i = int(p); i!=0; i--)
                     {
                         this_array.push_back(pp);
@@ -124,7 +133,7 @@ void Reader::read_1d_array(QString keyword_name)
             }
         }
     }
-    qInfo(logRead()) << keyword_name << "= QVector of size ==" << this_array.size();
+    qInfo(logRead()) << keyword_name << "- одномерный массив размером " << this_array.size() << "элементов";
     input_1d_arrays[keyword_name] = this_array;
 }
 
