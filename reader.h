@@ -11,6 +11,16 @@
 #include <QMap>
 #include "logger.h"
 
+enum filetypes
+{
+    init_well,
+    SCAL,
+    PVT,
+    GRID,
+    INIT,
+    GPRO
+};
+
 /*!
  \class Reader
  \brief Класс открытия и считывания DATA файла
@@ -40,6 +50,14 @@ public:
     bool set_datafile(QString &_filename);
 
     /*!
+     * \brief Задаем файл
+     * \param type - тип файла
+     * \param _filename - имя открываемого файла
+     * \return Открылся ли data файл
+     */
+    bool set_file(filetypes type, QString &_filename);
+
+    /*!
      * \brief Чтение всей модели
      */
     void read();
@@ -55,7 +73,7 @@ public:
     float nx, ny;//! размерности моделей
     QString title;//! название модели, нужно ли оно???
 
-
+    QVector<QSharedPointer<QFile>> input_files;
     QMap<QString, QVector<float>> input_1d_arrays;//! входные массивы
     QMap<QString, float> input_constants;//! входные константы
     QFile datafile, current_file;//! входные 2 файла, переделать под 4

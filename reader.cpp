@@ -3,7 +3,7 @@
 
 Reader::Reader()
 {
-
+    input_files = QVector<QSharedPointer<QFile>>(6);
 }
 
 bool Reader::set_datafile(QString &_filename)
@@ -20,6 +20,23 @@ bool Reader::set_datafile(QString &_filename)
         return false;
 }
 
+bool Reader::set_file(filetypes type, QString &_filename)
+{
+    QSharedPointer<QFile> this_file(new QFile(_filename));
+    bool is_opened = this_file->open(QIODevice::ReadOnly);
+    if(!is_opened)
+    {
+        qCritical(logRead()) << "Ошибка открытия файла " << _filename;
+        return false;
+    }
+    else
+    {
+        qInfo(logRead()) << "Файл " << _filename << "задан";
+        input_files.insert(type, this_file);
+        return true;
+    }
+}
+
 /*!
   \brief Функция открытия файла
   \param _filename - имя файла
@@ -31,7 +48,7 @@ bool Reader::open(QString &_filename)
     //Пытаемся открыть файл в режиме для чтения
     if(!is_opened)
     {
-        qInfo(logRead()) << "Ошибка открытия файла";
+        qInfo(logRead()) << "Ошибка открытия файла " << _filename;
         return false;
     }
     else

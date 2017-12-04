@@ -26,12 +26,13 @@ public:
     void create_graph(QChart* chart, QString title);
 
 private slots:
-    void handleButton();
+    void handleButton(filetypes type, QString &dialog_str);
 
 private:
     Ui::MainWindow *ui;
     //! Считыватель данных из DATA файла
     Model model;
+    QVector<QString> filenames;
 };
 
 #endif // MAINWINDOW_H

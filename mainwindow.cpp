@@ -6,36 +6,18 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    //ui->init_well_Button->connect(ui->init_well_Button, SIGNAL(clicked(bool)), this, SLOT(handleButton(filetypes::init_well, "txt файл (*.txt);")));
     ui->pushButton->connect(ui->pushButton, SIGNAL(clicked(bool)), this, SLOT(handleButton()));
+    filenames.reserve(6);
     create_pvt_features_graph();
 }
 
-void MainWindow::handleButton()
+void MainWindow::handleButton(filetypes type, QString &dialog_str)
 {
     //! Вызов диалогового окна открытия файла
-    QString filename = QFileDialog::getOpenFileName(this, tr("Открыть файл модели"), "",
-                                                    tr("DATA файл (*.DATA);;Все файлы(*)"));
-    //! Окно для вывода сообщения
-    QMessageBox msgbox;
-    int error_code = 0;
-    //! пытаемся открыть файл
-    if(model.reader.set_datafile(filename))
-    {
-        msgbox.setText("Исходный файл модели задан");
-    }
-    else
-    {
-        msgbox.setText("Произошла шибка при открытии файла");
-    }
-    //! Вызвать окно
-    msgbox.exec();
-    if(error_code != 0)
-        QApplication::quit();
-
-    model.simulate();
-
-    //! завершение работы программы
-    QApplication::quit();
+    QString filename = QFileDialog::getOpenFileName(this, tr("Открыть файл"), "",
+                                                    dialog_str + ";;Все файлы(*)");
+    filenames[type] = filename;
 }
 
 void MainWindow::create_graph(QChart* chart, QString title)
