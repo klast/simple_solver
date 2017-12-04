@@ -30,7 +30,7 @@
      <attribute name="title">
       <string>Инициализация</string>
      </attribute>
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="push_Button">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -40,7 +40,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Выбрать модель</string>
+       <string>Начать расчет</string>
       </property>
       <property name="checkable">
        <bool>true</bool>

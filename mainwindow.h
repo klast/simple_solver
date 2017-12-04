@@ -26,7 +26,8 @@ public:
     void create_graph(QChart* chart, QString title);
 
 private slots:
-    void handleButton(filetypes type, QString &dialog_str);
+    void handle_Button();
+    void handle_start_Button();
 
 private:
     Ui::MainWindow *ui;

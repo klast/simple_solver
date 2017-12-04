@@ -9,6 +9,8 @@ Model::Model()
 
 void Model::simulate()
 {
+    qDebug() << "Круто!";
+    return;
     read();
     init();
     //solve();
