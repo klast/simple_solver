@@ -79,6 +79,7 @@ void MainWindow::handle_start_Button()
         msgBox.setText("Ошибка! Какой-то из файлов не задан!");
         msgBox.exec();
         QApplication::quit();
+        return;
     }
     model.reader.set_file(filetypes::init_well, filenames[filetypes::init_well]);
     model.reader.set_file(filetypes::SCAL, filenames[filetypes::SCAL]);
@@ -86,7 +87,12 @@ void MainWindow::handle_start_Button()
     model.reader.set_file(filetypes::GRID, filenames[filetypes::GRID]);
     model.reader.set_file(filetypes::GPRO, filenames[filetypes::GPRO]);
     model.reader.set_file(filetypes::INIT, filenames[filetypes::INIT]);
-    model.simulate();
+    if(model.simulate() == 1)
+    {
+        msgBox.setText("Вроде считывание работает, но это не точно!");
+        QApplication::quit();
+        return;
+    }
 }
 
 void MainWindow::create_graph(QChart* chart, QString title)

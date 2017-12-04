@@ -7,18 +7,18 @@ Model::Model()
     nt = 15;
 }
 
-void Model::simulate()
+int Model::simulate()
 {
     qDebug() << "Круто!";
-    return;
     read();
     init();
+    return 1;
     //solve();
 }
 
 void Model::read()
 {
-    logFile.reset(new QFile(reader.datafile.fileName().split('.').at(0) + ".log"));
+    logFile.reset(new QFile(reader.input_files[0]->fileName().split('.').at(0) + ".log"));
     logFile.data()->open(QFile::WriteOnly | QFile::Text);
     qInstallMessageHandler(Model::messageHandler);
     reader.read();
@@ -39,7 +39,7 @@ void Model::solve()
 void Model::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QTextStream out(logFile.data());
-    out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss ");
+    out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz ");
     switch(type)
     {
         case QtInfoMsg:     out << "INFO "; break;

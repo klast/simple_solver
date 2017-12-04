@@ -13,12 +13,12 @@
 
 enum filetypes
 {
-    init_well,
-    SCAL,
-    PVT,
-    GRID,
-    INIT,
-    GPRO
+    init_well = 0,
+    SCAL = 1,
+    PVT = 2,
+    GRID = 3,
+    INIT = 4,
+    GPRO = 5
 };
 
 /*!
@@ -33,21 +33,6 @@ public:
      * \brief Конструктор
      */
     Reader();
-
-    //! TODO: переписать данный код с учетом 4-х файлов
-    /*!
-     * \brief Открыть файл
-     * \param _filename - имя открываемого файла
-     * \return Открылся ли файл
-     */
-    bool open(QString &_filename);
-
-    /*!
-     * \brief Задаем data файл
-     * \param _filename - имя открываемого файла
-     * \return Открылся ли data файл
-     */
-    bool set_datafile(QString &_filename);
 
     /*!
      * \brief Задаем файл
@@ -76,7 +61,7 @@ public:
     QVector<QSharedPointer<QFile>> input_files;
     QMap<QString, QVector<float>> input_1d_arrays;//! входные массивы
     QMap<QString, float> input_constants;//! входные константы
-    QFile datafile, current_file;//! входные 2 файла, переделать под 4
+    QFile * current_file;//! входные 2 файла, переделать под 4
     QDir model_directory;//! директория в которой находится data файл
 };
 

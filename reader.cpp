@@ -6,20 +6,6 @@ Reader::Reader()
     input_files = QVector<QSharedPointer<QFile>>(6);
 }
 
-bool Reader::set_datafile(QString &_filename)
-{
-    if(open(_filename))
-    {
-        datafile.setFileName(_filename);
-        datafile.open(QIODevice::ReadOnly);
-        QFileInfo info1(datafile);
-        model_directory = info1.absoluteDir();
-        return true;
-    }
-    else
-        return false;
-}
-
 bool Reader::set_file(filetypes type, QString &_filename)
 {
     QSharedPointer<QFile> this_file(new QFile(_filename));
@@ -37,73 +23,76 @@ bool Reader::set_file(filetypes type, QString &_filename)
     }
 }
 
-/*!
-  \brief Функция открытия файла
-  \param _filename - имя файла
- */
-bool Reader::open(QString &_filename)
-{
-    current_file.setFileName(_filename);
-    bool is_opened = current_file.open(QIODevice::ReadOnly);
-    //Пытаемся открыть файл в режиме для чтения
-    if(!is_opened)
-    {
-        qInfo(logRead()) << "Ошибка открытия файла " << _filename;
-        return false;
-    }
-    else
-    {
-        qInfo(logRead()) << "Файл открыт";
-        return true;
-    }    
-}
 void Reader::read()
 {
      QString str="";
      QString s, s1;
-     while (!datafile.atEnd())
+     current_file = input_files[0].data();
+     read_1d_array("wellinfo");
+     for(int i = 1; i < input_files.size(); i++)
      {
-         str = datafile.readLine();
-         if (str.contains ("title", Qt::CaseInsensitive))
+         if(!input_files[i])
+             continue;
+         current_file = input_files[i].data();
+         while(!current_file->atEnd())
          {
-              title = datafile.readLine();
-              title = title.simplified();
-              title = title.remove(QChar('"'), Qt::CaseInsensitive);
-              qInfo(logRead()) << "Title =" << title;
-         }
-         else if (str.contains ("dimens", Qt::CaseInsensitive))
-         {
-              s = datafile.readLine();
-              s = s.trimmed();
-              s = s.prepend(" ");
-              s1 = s.section(' ', 1, 1);
-              nx = s1.toFloat();
-              s1 = s.section(' ', 2, 2);
-              ny = s1.toFloat();
-              input_constants["nx"] = nx;
-              input_constants["ny"] = ny;
-              qInfo(logRead()) << "nx =" << nx;
-              qInfo(logRead()) << "ny =" << ny;
-         }
-         else if(str.contains("poro", Qt::CaseInsensitive))
-         {
-              read_1d_array("poro");
-         }
-         else if(str != "\r\n")
-         {
-              qInfo(logRead()) << "Необработанная строчка" << str;
+             str = current_file->readLine();
+             if(str.contains("swof", Qt::CaseInsensitive))
+             {
+                 read_1d_array("swof");
+             }
+             else if(str.contains("rock", Qt::CaseInsensitive))
+             {
+                 read_1d_array("rock");
+             }
+             else if(str.contains("pvtw", Qt::CaseInsensitive))
+             {
+                 read_1d_array("pvtw");
+             }
+             else if(str.contains("pvdo", Qt::CaseInsensitive))
+             {
+                 read_1d_array("pvdo");
+             }
+             else if(str.contains("density", Qt::CaseInsensitive))
+             {
+                 read_1d_array("density");
+             }
+             else if(str.contains("tops", Qt::CaseInsensitive))
+             {
+                 read_1d_array("tops");
+             }
+             else if(str.contains("pressure", Qt::CaseInsensitive))
+             {
+                 read_1d_array("pressure");
+             }
+             else if(str.contains("poro", Qt::CaseInsensitive))
+             {
+                 read_1d_array("poro");
+             }
+             else if(str.contains("permx", Qt::CaseInsensitive))
+             {
+                 read_1d_array("permx");
+             }
+             else if(str != "\r\n")
+             {
+                  qInfo(logRead()) << "Необработанная строчка" << str;
+             }
          }
      }
+     qInfo(logRead()) << "Считывание закончено";
 }
 
 void Reader::read_1d_array(QString keyword_name)
 {
     QVector<float> this_array;
-    QString tmp, s, s1; float p, pp; int i; p=0;
+    QString tmp, s, s1;
+    float p, pp;
+    int i;
+    p=0;
     while(true)
     {
-        tmp = datafile.readLine();
-        if (tmp[0] == "/") break;
+        tmp = current_file->readLine();
+        if (tmp[0] == "/" || current_file->atEnd()) break;
         else
         {
             QStringList my_row = tmp.split(' ');
@@ -135,14 +124,13 @@ void Reader::read_1d_array(QString keyword_name)
             }
         }
     }
-    qInfo(logRead()) << keyword_name << "=" << this_array;
+    qInfo(logRead()) << keyword_name << "= QVector of size ==" << this_array.size();
     input_1d_arrays[keyword_name] = this_array;
 }
 
 void Reader::close()
 {
-    datafile.close();
-    current_file.close();
+
 }
 
 
