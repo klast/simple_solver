@@ -23,6 +23,33 @@ bool Reader::set_file(filetypes type, QString &_filename)
     }
 }
 
+filetypes Reader::get_type(int i)
+{
+    filetypes result;
+    switch(i)
+    {
+        case 0:
+            result = init_well;
+        break;
+        case 1:
+            result = SCAL;
+        break;
+        case 2:
+            result = PVT;
+        break;
+        case 3:
+            result = GRID;
+        break;
+        case 4:
+            result = INIT;
+        break;
+        case 5:
+            result = GPRO;
+        break;
+    }
+    return result;
+}
+
 void Reader::read()
 {
      qInfo(logRead()) << "НАЧИНАЕМ СЧИТЫВАНИЕ";

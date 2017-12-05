@@ -47,6 +47,8 @@ public:
      */
     void read();
 
+    filetypes get_type(int i);
+
     /*!
      * \brief Чтение массива
      * \param keyword_name - Название ключевого слова
