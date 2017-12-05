@@ -6,36 +6,93 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->pushButton->connect(ui->pushButton, SIGNAL(clicked(bool)), this, SLOT(handleButton()));
+    ui->init_well_Button->connect(ui->init_well_Button, SIGNAL(clicked(bool)), this, SLOT(handle_Button()));
+    ui->SCAL_Button->connect(ui->SCAL_Button, SIGNAL(clicked(bool)), this, SLOT(handle_Button()));
+    ui->PVT_Button->connect(ui->PVT_Button, SIGNAL(clicked(bool)), this, SLOT(handle_Button()));
+    ui->GRID_Button->connect(ui->GRID_Button, SIGNAL(clicked(bool)), this, SLOT(handle_Button()));
+    ui->INIT_Button->connect(ui->INIT_Button, SIGNAL(clicked(bool)), this, SLOT(handle_Button()));
+    ui->GPRO_Button->connect(ui->GPRO_Button, SIGNAL(clicked(bool)), this, SLOT(handle_Button()));
+    ui->push_Button->connect(ui->push_Button, SIGNAL(clicked(bool)), this, SLOT(handle_start_Button()));
+    for(int i = 0; i < 6; i++)
+    {
+        filenames.append("");
+    }
     create_pvt_features_graph();
 }
 
-void MainWindow::handleButton()
+void MainWindow::handle_Button()
 {
     //! Вызов диалогового окна открытия файла
-    QString filename = QFileDialog::getOpenFileName(this, tr("Открыть файл модели"), "",
-                                                    tr("DATA файл (*.DATA);;Все файлы(*)"));
-    //! Окно для вывода сообщения
-    QMessageBox msgbox;
-    int error_code = 0;
-    //! пытаемся открыть файл
-    if(model.reader.set_datafile(filename))
+    QString dialog_name;
+    QString sender_name = sender()->objectName();
+    if(sender_name == ui->init_well_Button->objectName())
+        dialog_name = "txt файл (*.txt)";
+    else
+        dialog_name = "INC файл (*.INC)";
+    QString filename = QFileDialog::getOpenFileName(this, tr("Открыть файл"), "",
+                                                     dialog_name + ";;Все файлы(*)");
+    if(sender_name == ui->init_well_Button->objectName())
     {
-        msgbox.setText("Исходный файл модели задан");
+        filenames[filetypes::init_well] = filename;
+    }
+    else if(sender_name == ui->SCAL_Button->objectName())
+    {
+        filenames[filetypes::SCAL] = filename;
+    }
+    else if(sender_name == ui->PVT_Button->objectName())
+    {
+        filenames[filetypes::PVT] = filename;
+    }
+    else if(sender_name == ui->GRID_Button->objectName())
+    {
+        filenames[filetypes::GRID] = filename;
+    }
+    else if(sender_name == ui->INIT_Button->objectName())
+    {
+        filenames[filetypes::INIT] = filename;
+    }
+    else if(sender_name == ui->GPRO_Button->objectName())
+    {
+        filenames[filetypes::GPRO] = filename;
+    }
+    qDebug() << sender()->objectName() << filename;
+
+}
+
+void MainWindow::handle_start_Button()
+{
+    bool is_all_set = true;
+    for(int i = 0; i < 6; i++)
+    {
+        if(filenames[i] == "")
+        {
+            is_all_set = false;
+        }
+    }
+    QMessageBox msgBox;
+    if(is_all_set)
+    {
+        qDebug("Файлы заданы, начинаем!");
     }
     else
     {
-        msgbox.setText("Произошла шибка при открытии файла");
-    }
-    //! Вызвать окно
-    msgbox.exec();
-    if(error_code != 0)
+        msgBox.setText("Ошибка! Какой-то из файлов не задан!");
+        msgBox.exec();
         QApplication::quit();
-
-    model.simulate();
-
-    //! завершение работы программы
-    QApplication::quit();
+        return;
+    }
+    model.reader.set_file(filetypes::init_well, filenames[filetypes::init_well]);
+    model.reader.set_file(filetypes::SCAL, filenames[filetypes::SCAL]);
+    model.reader.set_file(filetypes::PVT, filenames[filetypes::PVT]);
+    model.reader.set_file(filetypes::GRID, filenames[filetypes::GRID]);
+    model.reader.set_file(filetypes::GPRO, filenames[filetypes::GPRO]);
+    model.reader.set_file(filetypes::INIT, filenames[filetypes::INIT]);
+    if(model.simulate() == 1)
+    {
+        msgBox.setText("Вроде считывание работает, но это не точно!");
+        QApplication::quit();
+        return;
+    }
 }
 
 void MainWindow::create_graph(QChart* chart, QString title)

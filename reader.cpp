@@ -1,100 +1,142 @@
 #include "reader.h"
-
+#include <QRegExp>
 
 Reader::Reader()
 {
-
+    input_files = QVector<QSharedPointer<QFile>>(6);
 }
 
-bool Reader::set_datafile(QString &_filename)
+bool Reader::set_file(filetypes type, QString &_filename)
 {
-    if(open(_filename))
-    {
-        datafile.setFileName(_filename);
-        datafile.open(QIODevice::ReadOnly);
-        QFileInfo info1(datafile);
-        model_directory = info1.absoluteDir();
-        return true;
-    }
-    else
-        return false;
-}
-
-/*!
-  \brief Функция открытия файла
-  \param _filename - имя файла
- */
-bool Reader::open(QString &_filename)
-{
-    current_file.setFileName(_filename);
-    bool is_opened = current_file.open(QIODevice::ReadOnly);
-    //Пытаемся открыть файл в режиме для чтения
+    QSharedPointer<QFile> this_file(new QFile(_filename));
+    bool is_opened = this_file->open(QIODevice::ReadOnly);
     if(!is_opened)
     {
-        qInfo(logRead()) << "Ошибка открытия файла";
+        qCritical(logRead()) << "Ошибка открытия файла " << _filename;
         return false;
     }
     else
     {
-        qInfo(logRead()) << "Файл открыт";
+        qInfo(logRead()) << "Файл " << _filename << "задан";
+        input_files.insert(type, this_file);
         return true;
-    }    
+    }
 }
+
+filetypes Reader::get_type(int i)
+{
+    filetypes result;
+    switch(i)
+    {
+        case 0:
+            result = init_well;
+        break;
+        case 1:
+            result = SCAL;
+        break;
+        case 2:
+            result = PVT;
+        break;
+        case 3:
+            result = GRID;
+        break;
+        case 4:
+            result = INIT;
+        break;
+        case 5:
+            result = GPRO;
+        break;
+    }
+    return result;
+}
+
 void Reader::read()
 {
+     qInfo(logRead()) << "НАЧИНАЕМ СЧИТЫВАНИЕ";
      QString str="";
      QString s, s1;
-     while (!datafile.atEnd())
+     current_file = input_files[0].data();
+     qInfo(logRead()) << "ОТКРЫТ ФАЙЛ" << current_file->fileName();
+     read_1d_array("wellinfo");
+     for(int i = 1; i < input_files.size(); i++)
      {
-         str = datafile.readLine();
-         if (str.contains ("title", Qt::CaseInsensitive))
+         if(!input_files[i])
+             continue;
+         current_file = input_files[i].data();
+         qInfo(logRead()) << "ОТКРЫТ ФАЙЛ" << current_file->fileName();
+         while(!current_file->atEnd())
          {
-              title = datafile.readLine();
-              title = title.simplified();
-              title = title.remove(QChar('"'), Qt::CaseInsensitive);
-              qInfo(logRead()) << "Title =" << title;
-         }
-         else if (str.contains ("dimens", Qt::CaseInsensitive))
-         {
-              s = datafile.readLine();
-              s = s.trimmed();
-              s = s.prepend(" ");
-              s1 = s.section(' ', 1, 1);
-              nx = s1.toFloat();
-              s1 = s.section(' ', 2, 2);
-              ny = s1.toFloat();
-              input_constants["nx"] = nx;
-              input_constants["ny"] = ny;
-              qInfo(logRead()) << "nx =" << nx;
-              qInfo(logRead()) << "ny =" << ny;
-         }
-         else if(str.contains("poro", Qt::CaseInsensitive))
-         {
-              read_1d_array("poro");
-         }
-         else if(str != "\r\n")
-         {
-              qInfo(logRead()) << "Необработанная строчка" << str;
+             str = current_file->readLine();
+             if(str.contains("swof", Qt::CaseInsensitive))
+             {
+                 read_1d_array("swof");
+             }
+             else if(str.contains("rock", Qt::CaseInsensitive))
+             {
+                 read_1d_array("rock");
+             }
+             else if(str.contains("pvtw", Qt::CaseInsensitive))
+             {
+                 read_1d_array("pvtw");
+             }
+             else if(str.contains("pvdo", Qt::CaseInsensitive))
+             {
+                 read_1d_array("pvdo");
+             }
+             else if(str.contains("density", Qt::CaseInsensitive))
+             {
+                 read_1d_array("density");
+             }
+             else if(str.contains("tops", Qt::CaseInsensitive))
+             {
+                 read_1d_array("tops");
+             }
+             else if(str.contains("pressure", Qt::CaseInsensitive))
+             {
+                 read_1d_array("pressure");
+             }
+             else if(str.contains("poro", Qt::CaseInsensitive))
+             {
+                 read_1d_array("poro");
+             }
+             else if(str.contains("permx", Qt::CaseInsensitive))
+             {
+                 read_1d_array("permx");
+             }
+             else if(str != "\r\n")
+             {
+                  qWarning(logRead()) << "необработанная строчка" << str;
+             }
          }
      }
+     qInfo(logRead()) << "СЧИТЫВАНИЕ ЗАКОНЧЕНО";
 }
 
 void Reader::read_1d_array(QString keyword_name)
 {
-    QVector<float> this_array;
-    QString tmp, s, s1; float p, pp; int i; p=0;
+    QVector<double> this_array;
+    QString tmp, s, s1;
+    double p, pp;
+    int i;
+    p=0;
+    qDebug(logRead()) << "Считываю" << keyword_name;
     while(true)
     {
-        tmp = datafile.readLine();
-        if (tmp[0] == "/") break;
+        if(current_file->atEnd())
+            break;
+        tmp = current_file->readLine();
+        if (tmp[0] == "/")
+            break;
         else
         {
-            QStringList my_row = tmp.split(' ');
+            QStringList my_row = tmp.split(QRegExp("\\s"));
             for(QString item: my_row)
             {
-                if (!tmp.contains("*") )
+                if(item == "")
+                    continue;
+                if (!item.contains("*") )
                 {
-                    p = item.toFloat();
+                    p = item.toDouble();
                     this_array.push_back(p);
                 }
                 else
@@ -106,9 +148,9 @@ void Reader::read_1d_array(QString keyword_name)
                     }
                     s = s.prepend(" ");
                     s1 = s.section(' ', 1, 1);
-                    p = s1.toFloat();
+                    p = s1.toDouble();
                     s1 = s.section(' ', 2, 2);
-                    pp = s1.toFloat();
+                    pp = s1.toDouble();
                     for (i = int(p); i!=0; i--)
                     {
                         this_array.push_back(pp);
@@ -118,14 +160,13 @@ void Reader::read_1d_array(QString keyword_name)
             }
         }
     }
-    qInfo(logRead()) << keyword_name << "=" << this_array;
+    qInfo(logRead()) << keyword_name << "- одномерный массив размером " << this_array.size() << "элементов";
     input_1d_arrays[keyword_name] = this_array;
 }
 
 void Reader::close()
 {
-    datafile.close();
-    current_file.close();
+
 }
 
 

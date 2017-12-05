@@ -26,12 +26,14 @@ public:
     void create_graph(QChart* chart, QString title);
 
 private slots:
-    void handleButton();
+    void handle_Button();
+    void handle_start_Button();
 
 private:
     Ui::MainWindow *ui;
     //! Считыватель данных из DATA файла
     Model model;
+    QVector<QString> filenames;
 };
 
 #endif // MAINWINDOW_H

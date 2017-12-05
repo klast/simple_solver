@@ -4,19 +4,21 @@ Model::Model()
 {
     nx = 100;
     ny = 100;
-    nt = 15;
+    nt = 1000;
 }
 
-void Model::simulate()
+int Model::simulate()
 {
+    qDebug() << "Круто!";
     read();
     init();
+    return 1;
     //solve();
 }
 
 void Model::read()
 {
-    logFile.reset(new QFile(reader.datafile.fileName().split('.').at(0) + ".log"));
+    logFile.reset(new QFile(reader.input_files[0]->fileName().split('.').at(0) + ".log"));
     logFile.data()->open(QFile::WriteOnly | QFile::Text);
     qInstallMessageHandler(Model::messageHandler);
     reader.read();
@@ -26,7 +28,7 @@ void Model::init()
 {
     nx = reader.input_constants["nx"];
     ny = reader.input_constants["ny"];
-    // TODO: вычислить шаг по времени по условию Куранта
+    solver.init(reader.input_1d_arrays);
 }
 
 void Model::solve()
@@ -37,16 +39,16 @@ void Model::solve()
 void Model::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QTextStream out(logFile.data());
-    out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss ");
+    out << QDateTime::currentDateTime().toString("dd-MM-yyyy hh:mm:ss.zzz ");
     switch(type)
     {
-        case QtInfoMsg:     out << "INFO "; break;
-        case QtDebugMsg:    out << "DEG "; break;
-        case QtWarningMsg:  out << "WRN "; break;
-        case QtCriticalMsg: out << "CRT "; break;
-        case QtFatalMsg:    out << "FTL "; break;
+        case QtInfoMsg:     out << "| INFO     "; break;
+        case QtDebugMsg:    out << "| DEBUG    "; break;
+        case QtWarningMsg:  out << "| WARNING  "; break;
+        case QtCriticalMsg: out << "| CRITICAL "; break;
+        case QtFatalMsg:    out << "| FATAL    "; break;
     }
-    out << context.category <<": " << msg << endl;
+    out << "| " << context.category <<"| " << msg << endl;
     out.flush();
 }
 

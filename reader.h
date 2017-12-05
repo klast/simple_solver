@@ -11,6 +11,16 @@
 #include <QMap>
 #include "logger.h"
 
+enum filetypes
+{
+    init_well = 0,
+    SCAL = 1,
+    PVT = 2,
+    GRID = 3,
+    INIT = 4,
+    GPRO = 5
+};
+
 /*!
  \class Reader
  \brief Класс открытия и считывания DATA файла
@@ -24,25 +34,20 @@ public:
      */
     Reader();
 
-    //! TODO: переписать данный код с учетом 4-х файлов
     /*!
-     * \brief Открыть файл
-     * \param _filename - имя открываемого файла
-     * \return Открылся ли файл
-     */
-    bool open(QString &_filename);
-
-    /*!
-     * \brief Задаем data файл
+     * \brief Задаем файл
+     * \param type - тип файла
      * \param _filename - имя открываемого файла
      * \return Открылся ли data файл
      */
-    bool set_datafile(QString &_filename);
+    bool set_file(filetypes type, QString &_filename);
 
     /*!
      * \brief Чтение всей модели
      */
     void read();
+
+    filetypes get_type(int i);
 
     /*!
      * \brief Чтение массива
@@ -55,10 +60,10 @@ public:
     float nx, ny;//! размерности моделей
     QString title;//! название модели, нужно ли оно???
 
-
-    QMap<QString, QVector<float>> input_1d_arrays;//! входные массивы
-    QMap<QString, float> input_constants;//! входные константы
-    QFile datafile, current_file;//! входные 2 файла, переделать под 4
+    QVector<QSharedPointer<QFile>> input_files;
+    QMap<QString, QVector<double>> input_1d_arrays;//! входные массивы
+    QMap<QString, double> input_constants;//! входные константы
+    QFile * current_file;//! входные 2 файла, переделать под 4
     QDir model_directory;//! директория в которой находится data файл
 };
 

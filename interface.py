@@ -5,12 +5,10 @@
 # Created by: PyQt5 UI code generator 5.6
 #
 # WARNING! All changes made in this file will be lost!
-import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import *
-from ctypes import *
 
-class Ui_MainWindow(QtWidgets.QMainWindow):
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1104, 636)
@@ -21,11 +19,46 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.tabWidget.setObjectName("tabWidget")
         self.init_tab = QtWidgets.QWidget()
         self.init_tab.setObjectName("init_tab")
-        self.pushButton = QtWidgets.QPushButton(self.init_tab)
-        self.pushButton.setGeometry(QtCore.QRect(10, 10, 101, 23))
-        self.pushButton.setCheckable(True)
-        self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(self.handleButton)
+        self.push_Button = QtWidgets.QPushButton(self.init_tab)
+        self.push_Button.setGeometry(QtCore.QRect(10, 10, 101, 23))
+        self.push_Button.setCheckable(True)
+        self.push_Button.setObjectName("push_Button")
+        self.label_12 = QtWidgets.QLabel(self.init_tab)
+        self.label_12.setGeometry(QtCore.QRect(20, 60, 111, 21))
+        self.label_12.setObjectName("label_12")
+        self.label_13 = QtWidgets.QLabel(self.init_tab)
+        self.label_13.setGeometry(QtCore.QRect(20, 90, 91, 16))
+        self.label_13.setObjectName("label_13")
+        self.label_14 = QtWidgets.QLabel(self.init_tab)
+        self.label_14.setGeometry(QtCore.QRect(20, 120, 47, 13))
+        self.label_14.setObjectName("label_14")
+        self.label_15 = QtWidgets.QLabel(self.init_tab)
+        self.label_15.setGeometry(QtCore.QRect(20, 150, 61, 16))
+        self.label_15.setObjectName("label_15")
+        self.label_16 = QtWidgets.QLabel(self.init_tab)
+        self.label_16.setGeometry(QtCore.QRect(20, 180, 51, 16))
+        self.label_16.setObjectName("label_16")
+        self.label_17 = QtWidgets.QLabel(self.init_tab)
+        self.label_17.setGeometry(QtCore.QRect(20, 210, 71, 16))
+        self.label_17.setObjectName("label_17")
+        self.init_well_Button = QtWidgets.QPushButton(self.init_tab)
+        self.init_well_Button.setGeometry(QtCore.QRect(140, 60, 261, 23))
+        self.init_well_Button.setObjectName("init_well_Button")
+        self.SCAL_Button = QtWidgets.QPushButton(self.init_tab)
+        self.SCAL_Button.setGeometry(QtCore.QRect(140, 90, 261, 23))
+        self.SCAL_Button.setObjectName("SCAL_Button")
+        self.PVT_Button = QtWidgets.QPushButton(self.init_tab)
+        self.PVT_Button.setGeometry(QtCore.QRect(140, 120, 261, 23))
+        self.PVT_Button.setObjectName("PVT_Button")
+        self.GRID_Button = QtWidgets.QPushButton(self.init_tab)
+        self.GRID_Button.setGeometry(QtCore.QRect(140, 150, 261, 23))
+        self.GRID_Button.setObjectName("GRID_Button")
+        self.INIT_Button = QtWidgets.QPushButton(self.init_tab)
+        self.INIT_Button.setGeometry(QtCore.QRect(140, 180, 261, 23))
+        self.INIT_Button.setObjectName("INIT_Button")
+        self.GPRO_Button = QtWidgets.QPushButton(self.init_tab)
+        self.GPRO_Button.setGeometry(QtCore.QRect(140, 210, 261, 23))
+        self.GPRO_Button.setObjectName("GPRO_Button")
         self.tabWidget.addTab(self.init_tab, "")
         self.pressure_animation = QtWidgets.QWidget()
         self.pressure_animation.setObjectName("pressure_animation")
@@ -99,7 +132,19 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.pushButton.setText(_translate("MainWindow", "Выбрать модель"))
+        self.push_Button.setText(_translate("MainWindow", "Начать расчет"))
+        self.label_12.setText(_translate("MainWindow", "Файл скважин(init)"))
+        self.label_13.setText(_translate("MainWindow", "Файл SCAL"))
+        self.label_14.setText(_translate("MainWindow", "Файл PVT"))
+        self.label_15.setText(_translate("MainWindow", "Файл GRID"))
+        self.label_16.setText(_translate("MainWindow", "Файл INIT"))
+        self.label_17.setText(_translate("MainWindow", "Файл GPRO"))
+        self.init_well_Button.setText(_translate("MainWindow", "Выбрать файл"))
+        self.SCAL_Button.setText(_translate("MainWindow", "Выбрать файл"))
+        self.PVT_Button.setText(_translate("MainWindow", "Выбрать файл"))
+        self.GRID_Button.setText(_translate("MainWindow", "Выбрать файл"))
+        self.INIT_Button.setText(_translate("MainWindow", "Выбрать файл"))
+        self.GPRO_Button.setText(_translate("MainWindow", "Выбрать файл"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.init_tab), _translate("MainWindow", "Инициализация"))
         self.label_11.setText(_translate("MainWindow", "Анимация давления"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.pressure_animation), _translate("MainWindow", "Давление"))
@@ -117,24 +162,5 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.label.setText(_translate("MainWindow", "ГРАФИК PVT"))
         self.label_2.setText(_translate("MainWindow", "ГРАФИК КАПИЛЛЯРКИ"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.pvt_features), _translate("MainWindow", "PVT свойства"))
-        
-    def handleButton(self):
-        self.filename = QFileDialog.getOpenFileName(self, "Открыть файл модели", "", "DATA файл (*.DATA);;Все файлы(*)")
-        self.lib = cdll.LoadLibrary("lib_simple_solver.dll")
-        self.lib.set_datafile.argtypes = [c_char_p]        
-        self.lib.set_datafile(self.filename[0].encode('UTF-8'))
-        a = create_string_buffer(100)
-        self.lib.get_datafile(a)
-        print(a.value)
-        sys.exit(0)
-        
-        
 
-if __name__ == '__main__':
-    
-    app = QApplication(sys.argv)
-    this_widget = QMainWindow()
-    this_ui = Ui_MainWindow()
-    this_ui.setupUi(this_widget)
-    this_widget.show()
-    sys.exit(app.exec_())
+
