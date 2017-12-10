@@ -1,5 +1,11 @@
-#include "solver.h"
+// Стандартные библиотеки C++
 #include <algorithm>
+
+// Пользовательские библиотеки
+#include "solver.h"
+#include "interpol.h"
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Core>
 
 Solver::Solver()
 {
@@ -166,7 +172,7 @@ void Solver::inner_solve(double begin_time, double end_time)
         {
 
             explicit_scheme_calc();
-            // TODO: выполняем расчёт неявной схемой
+            implicit_scheme_calc();
             residual = calc_residual();
 
             num_inner_it++;
@@ -198,6 +204,114 @@ double Solver::calc_residual()
 
 }
 
+void Solver::implicit_scheme_calc()
+{
+    Eigen::SparseMatrix<double> pres_mat(nx * ny, nx * ny); // матрица коэффициентов в уравнениях на давление нефти
+    Eigen::VectorXd pres_vec(nx * ny); // правая часть СЛАУ в уравнениях на давление нефти
+    Eigen::BiCGSTAB< Eigen::SparseMatrix<double> > mat_solver; // решатель системы СЛАУ
+
+    // Структура "триплет" для ускорения заполнения разреженной матрицы
+    typedef Eigen::Triplet<double> T;
+    std::vector<T> tripletList;
+
+    // Задание интерполяционных многочленов
+    // TODO: исправить данную часть кода (необходимо получать по координате данные по проницаемостям и пр.)
+    Q_Interpol inter_k_absol(nx, ny, nx * dx, ny * dy, k_absol);
+    Q_Interpol inter_k_relat_oil(nx, ny, nx * dx, ny * dy, k_relat_oil);
+    Q_Interpol inter_k_relat_water(nx, ny, nx * dx, ny * dy, k_relat_water);
+    Q_Interpol inter_heights(nx, ny, nx * dx, ny * dy, heights);
+    Q_Interpol inter_capillary_press(nx, ny, nx * dx, ny * dy, capillary_press);
+
+    for (int node_y = 0; node_y < ny; node_y++)
+        for (int node_x = 0; node_x < nx; node_x++)
+        {
+            // Матрица pres_mat содержит коэффициенты при давлениях p_{i, j}.
+            // Самих неизвестных величин M * N штук, поэтому матрица
+            // имеет размер M * N. Для облегчения работы вводятся
+            // переменные, в которых пересчитывается номер элемента в матрице.
+            int m_xp_y = (node_x + 1) + node_y * ny; // номер p_{i + 1, j} в матрице
+            int m_x_y  =  node_x      + node_y * ny; // номер p_{i    , j} в матрице
+            int m_xm_y = (node_x - 1) + node_y * ny; // номер p_{i - 1, j} в матрице
+            int m_x_yp = node_x + (node_y + 1) * ny; // номер p_{i, j + 1} в матрице
+            int m_x_ym = node_x + (node_y - 1) * ny; // номер p_{i, j - 1} в матрице
+
+            double point_x = node_x * dx; // Координата x
+            double point_y = node_y * dy; // Координата y
+
+            // Флаг, определяющий принадлежность элемента границе сетки
+            bool right_border = (node_x == nx - 1);
+            bool left_border  = (node_x == 0);
+            bool down_border  = (node_y == ny - 1);
+            bool up_border    = (node_y == 0);
+
+            // Коэффициенты T в точках (i +, j), (i -, j) (i, j +) и (i, j -) (здесь и далее см. обозн. в схеме Емченко)
+            double T_xp_x = inter_k_absol.z(point_x + 0.5 * dx, point_y) * dy * dz / dx;
+            double T_x_xm = inter_k_absol.z(point_x - 0.5 * dx, point_y) * dy * dz / dx;
+            double T_yp_y = inter_k_absol.z(point_x, point_y + 0.5 * dy) * dx * dz / dy;
+            double T_y_ym = inter_k_absol.z(point_x, point_y - 0.5 * dy) * dx * dz / dy;
+
+            // Коэффициенты lambda_o * B в точках (i +, j), (i -, j), (i, j +) и (i, j -)
+            double lambda_oil_xp_x = inter_k_relat_oil.z(point_x + 0.5 * dx, point_y) / viscosity_oil;
+            double lambda_oil_x_xm = inter_k_relat_oil.z(point_x - 0.5 * dx, point_y) / viscosity_oil;
+            double lambda_oil_yp_y = inter_k_relat_oil.z(point_x, point_y + 0.5 * dy) / viscosity_oil;
+            double lambda_oil_y_ym = inter_k_relat_oil.z(point_x, point_y - 0.5 * dy) / viscosity_oil;
+
+            // Коэффициенты lambda_w * B в точках (i +, j), (i -, j), (i, j +) и (i, j -)
+            double lambda_water_xp_x = inter_k_relat_water.z(point_x + 0.5 * dx, point_y) / viscosity_water;
+            double lambda_water_x_xm = inter_k_relat_water.z(point_x - 0.5 * dx, point_y) / viscosity_water;
+            double lambda_water_yp_y = inter_k_relat_water.z(point_x, point_y + 0.5 * dy) / viscosity_water;
+            double lambda_water_y_ym = inter_k_relat_water.z(point_x, point_y - 0.5 * dy) / viscosity_water;
+
+            // Капиллярное давление в точках (i +, j), (i -, j),  (i, j +) и (i, j -)
+            double pressure_xp_x = inter_capillary_press.z(point_x + dx, point_y) - inter_capillary_press.z(point_x     , point_y);
+            double pressure_x_xm = inter_capillary_press.z(point_x     , point_y) - inter_capillary_press.z(point_x - dx, point_y);
+            double pressure_yp_y = inter_capillary_press.z(point_x, point_y + dy) - inter_capillary_press.z(point_x, point_y     );
+            double pressure_y_ym = inter_capillary_press.z(point_x, point_y     ) - inter_capillary_press.z(point_x, point_y - dy);
+
+            // Давление в следствие гравитации в точках (i +, j), (i -, j),  (i, j +) и (i, j -)
+            double grav_press_xp_x = gravity * (inter_heights.z(point_x + dx, point_y) - inter_heights.z(point_x     , point_y));
+            double grav_press_x_xm = gravity * (inter_heights.z(point_x     , point_y) - inter_heights.z(point_x - dx, point_y));
+            double grav_press_yp_y = gravity * (inter_heights.z(point_x, point_y + dy) - inter_heights.z(point_x, point_y     ));
+            double grav_press_y_ym = gravity * (inter_heights.z(point_x, point_y     ) - inter_heights.z(point_x, point_y - dy));
+
+            // Заполнение матрицы
+            double temp_xp_x = (right_border) ? 0.0 : T_xp_x * (lambda_oil_xp_x + lambda_water_xp_x);
+            double temp_x_xm = (left_border)  ? 0.0 : T_x_xm * (lambda_oil_x_xm + lambda_water_x_xm);
+            double temp_yp_y = (down_border)  ? 0.0 : T_yp_y * (lambda_oil_yp_y + lambda_water_yp_y);
+            double temp_y_ym = (up_border)    ? 0.0 : T_y_ym * (lambda_oil_y_ym + lambda_water_y_ym);
+            double temp_x_y  = - (temp_xp_x + temp_x_xm + temp_yp_y + temp_y_ym);
+
+            if (temp_xp_x != 0.0) tripletList.push_back(T(m_xp_y, m_x_y, temp_xp_x));
+            if (temp_x_xm != 0.0) tripletList.push_back(T(m_xm_y, m_x_y, temp_x_xm));
+            if (temp_yp_y != 0.0) tripletList.push_back(T(m_x_yp, m_x_y, temp_yp_y));
+            if (temp_y_ym != 0.0) tripletList.push_back(T(m_x_ym, m_x_y, temp_y_ym));
+            if (temp_x_y != 0.0) tripletList.push_back(T(m_x_y, m_x_y, temp_x_y));
+
+            // Заполнение правой части
+            temp_xp_x = (right_border) ? 0.0 : T_xp_x * (grav_press_xp_x * (density_oil * lambda_oil_xp_x + density_water * lambda_water_xp_x) + lambda_water_xp_x * pressure_xp_x);
+            temp_x_xm = (left_border)  ? 0.0 : T_x_xm * (grav_press_x_xm * (density_oil * lambda_oil_x_xm + density_water * lambda_water_x_xm) + lambda_water_x_xm * pressure_x_xm);
+            temp_yp_y = (down_border)  ? 0.0 : T_yp_y * (grav_press_yp_y * (density_oil * lambda_oil_yp_y + density_water * lambda_water_yp_y) + lambda_water_yp_y * pressure_yp_y);
+            temp_y_ym = (up_border)    ? 0.0 : T_y_ym * (grav_press_y_ym * (density_oil * lambda_oil_y_ym + density_water * lambda_water_y_ym) + lambda_water_y_ym * pressure_y_ym);
+            pres_vec(m_x_y) = - temp_xp_x + temp_x_xm - temp_yp_y + temp_y_ym;
+        };
+
+
+    pres_mat.setFromTriplets(tripletList.begin(), tripletList.end());
+    mat_solver.compute(pres_mat);
+    mat_solver.analyzePattern(pres_mat);
+
+    // Получить вектор решений
+    Eigen::VectorXd solution(nx * ny);
+    solution = mat_solver.solve(pres_vec);
+    for (int node_x = 0; node_x < nx; node_x++)
+        for (int node_y = 0; node_y < ny; node_y++)
+            oil_press_next[node_x][node_y] = solution(node_x, node_y);
+
+    // Вывод отладочной информации
+    qDebug() << "#iterations" << mat_solver.iterations();
+    qDebug() << "estimated error" << mat_solver.error();
+}
+
 void Solver::explicit_scheme_calc()
 {
     // TODO: рассчитать все параметры, зависящие от водонасыщенности s_w, при s_w = s_w(t_{n + 1})
@@ -206,12 +320,12 @@ void Solver::explicit_scheme_calc()
         for (int node_y = 0; node_y < ny; node_y++)
         {
             // Коэффициенты T в точках (i +, j) и (i -, j) (здесь и далее см. обозн. в схеме Емченко)
-            double T_xp_x = dy * dz / dx * k_absol_x[node_x + 1][node_y] * k_absol_x[node_x][node_y] / (k_absol_x[node_x + 1][node_y] + k_absol_x[node_x][node_y]) / 0.5;
-            double T_x_xm = dy * dz / dx * k_absol_x[node_x - 1][node_y] * k_absol_x[node_x][node_y] / (k_absol_x[node_x - 1][node_y] + k_absol_x[node_x][node_y]) / 0.5;
+            double T_xp_x = dy * dz / dx * k_absol[node_x + 1][node_y] * k_absol[node_x][node_y] / (k_absol[node_x + 1][node_y] + k_absol[node_x][node_y]) / 0.5;
+            double T_x_xm = dy * dz / dx * k_absol[node_x - 1][node_y] * k_absol[node_x][node_y] / (k_absol[node_x - 1][node_y] + k_absol[node_x][node_y]) / 0.5;
 
             // Коэффициенты T в точках (i, j +) и (i, j -)
-            double T_yp_y = dx * dz / dy * k_absol_y[node_x][node_y + 1] * k_absol_y[node_x][node_y] / (k_absol_y[node_x][node_y + 1] + k_absol_y[node_x][node_y]) / 0.5;
-            double T_y_ym = dx * dz / dy * k_absol_y[node_x][node_y - 1] * k_absol_y[node_x][node_y] / (k_absol_y[node_x][node_y - 1] + k_absol_y[node_x][node_y]) / 0.5;
+            double T_yp_y = dx * dz / dy * k_absol[node_x][node_y + 1] * k_absol[node_x][node_y] / (k_absol[node_x][node_y + 1] + k_absol[node_x][node_y]) / 0.5;
+            double T_y_ym = dx * dz / dy * k_absol[node_x][node_y - 1] * k_absol[node_x][node_y] / (k_absol[node_x][node_y - 1] + k_absol[node_x][node_y]) / 0.5;
 
             // Коэффициенты lambda в точках (i +, j) и (i -, j)
             double lambda_xp_x = k_relat_water[node_x + 1][node_y] * k_relat_water[node_x][node_y] / (k_relat_water[node_x + 1][node_y] + k_relat_water[node_x][node_y]) / 0.5 / viscosity_water / compress_water;
@@ -245,7 +359,6 @@ void Solver::explicit_scheme_calc()
             double coeff_y_ym = T_y_ym * lambda_y_ym * potential_y_ym;
 
             // Рассчитываем водонасыщенность s_w на шаге t_{n + 1}
-            water_press_next[node_x][node_y] = dt * compress_oil / porosity / (dx * dy * dz) * (coeff_xp_x - coeff_x_xm + coeff_yp_y - coeff_y_ym);
+            water_press_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff_xp_x - coeff_x_xm + coeff_yp_y - coeff_y_ym);
         };
-
 }

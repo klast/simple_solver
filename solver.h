@@ -123,6 +123,10 @@ public:
      * \brief Рассчитать по явной схеме водонасыщенность
      */
     void explicit_scheme_calc();
+    /*!
+     * \brief Рассчитать по явной схеме водонасыщенность
+     */
+    void implicit_scheme_calc();
 
     /*!
      * \brief Инициализация данных

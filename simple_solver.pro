@@ -29,14 +29,16 @@ SOURCES += \
         reader.cpp \
         model.cpp \
         solver.cpp \
-        logger.cpp
+        logger.cpp \
+    interpol.cpp
 
 HEADERS += \
         mainwindow.h \
         reader.h \
         model.h \
         solver.h \
-        logger.h
+        logger.h \
+    interpol.h
 
 FORMS += \
         mainwindow.ui
