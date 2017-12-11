@@ -27,6 +27,8 @@ public:
     }
     void init(int n, double l, vector<double>& input_x, vector<double>& input_y)
     {
+        a.resize(n);
+        b.resize(n);
         nodes = n;
         lenght = l;
 

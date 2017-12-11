@@ -56,6 +56,10 @@ void Solver::init(input_data_type &input_data)
     viscosity_water = input_data["pvtw"].at(3);
     qInfo(logInit()) << "Вязкость воды = " << viscosity_water;
     b_oil = input_data["pvdo"].at(1);
+
+    // TODO: убрать comperss_oil, оставить b_oil
+    compress_oil = b_oil;
+
     qInfo(logInit()) << "Коэффициент объемного расширения нефти =" << b_oil;
     viscosity_oil = input_data["pvdo"].at(2);
     qInfo(logInit()) << "Вязкость нефти =" << viscosity_oil;
@@ -75,6 +79,35 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "Пронимаемость по OY =" << permy;
     qInfo(logInit()) << "ИНИЦИАЛИЗАЦИЯ ПОКА ЗАКОНЧЕНА!";
     input_data.clear();
+
+    // Инициализация ускорения свободного падения
+    gravity = 9.81;
+
+    // TODO: "встроить в интерфейс"
+    epsilon = 1.0E-3;
+
+    // TODO: попробовать упростить?
+    capillary_press.resize(nx);
+    oil_press_prev.resize(nx);
+    oil_press_next.resize(nx);
+    s_water_prev.resize(nx);
+    s_water_next.resize(nx);
+    k_relat_oil.resize(nx);
+    k_relat_water.resize(nx);
+
+    heights = tops; // TODO: убрать heights, переименовать в нужных местах в tops
+    k_absol = permx;
+
+    for (int node = 0; node < nx; node++)
+    {
+        capillary_press[node].resize(ny);
+        oil_press_prev[node].resize(ny);
+        oil_press_next[node].resize(ny);
+        s_water_prev[node].resize(ny);
+        s_water_next[node].resize(ny);
+        k_relat_oil[node].resize(ny);
+        k_relat_water[node].resize(ny);
+    };
 }
 
 void Solver::init_swof(input_data_type &input_data)
@@ -186,6 +219,9 @@ void Solver::solve()
 
 void Solver::inner_solve(double begin_time, double end_time)
 {
+    // TODO: добавить расчёт шага dt через условие Куранта
+    dt = end_time - begin_time;
+
     // Если глобальный временной шаг меньше шага по Куранту
     if ((end_time - begin_time) < dt)
         dt = end_time - begin_time;
@@ -260,13 +296,11 @@ double Solver::calc_residual()
 
 void Solver::fill_data()
 {
-    L_Interpol inter_obj((int)sw_init.size(), 1.0, sw_init, krw_init);
-
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++) {
-            k_relat_oil[node_x][node_y] = inter_obj.y(s_water_prev[node_x][node_y]);
-            k_relat_water[node_x][node_y] = inter_obj.y(s_water_prev[node_x][node_y]);
-            capillary_press[node_x][node_y] = inter_obj.y(s_water_prev[node_x][node_y]);
+            k_relat_oil[node_x][node_y] = krow_inter.y(s_water_prev[node_x][node_y]);
+            k_relat_water[node_x][node_y] = krw_inter.y(s_water_prev[node_x][node_y]);
+            capillary_press[node_x][node_y] = pcow_inter.y(s_water_prev[node_x][node_y]);
         };
 }
 

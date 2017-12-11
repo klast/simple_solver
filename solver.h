@@ -64,17 +64,15 @@ private:
     vector_double_2d heights; // высоты D(x, y) [1 м]
     vector_double_2d capillary_press; // капиллярное давление [1 Па]
     vector_double_2d s_water_init; //! начальная водонасыщенность []
-    vector_double_2d s_water; //! водонасыщенность
 
     // Искомые величины
     // TODO: возможно, нужно отделить данные на предыдущ. и следующ. внутренних итерациях в отдельный класс InnerState
-    vector_double_2d oil_press; // давление нефти [1 Па]
     vector_double_2d water_press; // давление воды [1 Па]
     vector_double_2d oil_press_prev; // давление нефти на n внутренней итерации [1 Па]
     vector_double_2d oil_press_next; // давление нефти на n + 1 внутренней итерации [1 Па]
     vector_double_2d s_water_prev; // давление воды на n внутренней итерации [1 Па]
     vector_double_2d s_water_next; // давление воды на n + 1 внутренней итерации [1 Па]
-    vector_double_2d pressure; //! давление (является "начальным" на каждом глобальном шаге (оно обновляется))
+    vector_double_2d pressure; //! давление нефти [1 Па] (является "начальным" на каждом глобальном шаге (оно обновляется))
     vector_double_2d tops; //! глубины ячеек
     vector_double_2d porosity; //! пористость
     vector_double_2d permx; //! проницаемость по OX
