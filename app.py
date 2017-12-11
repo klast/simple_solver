@@ -6,11 +6,16 @@ Created on Tue Dec  5 14:56:39 2017
 """
 
 import sys
+import random
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QApplication, QFileDialog
+from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout
 from interface import Ui_MainWindow
 from ctypes import *
-
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.pyplot as plt
+import numpy as np
+import time
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -23,6 +28,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.PVT_Button.clicked.connect(self.handle_Button)
         self.SCAL_Button.clicked.connect(self.handle_Button)
         self.push_Button.clicked.connect(self.handle_start_Button)
+        self.pushButton_3.clicked.connect(self.handle_drawPressure_Button)
         self.filenames = ["", "", "", "", "", ""]
         
     def handle_Button(self):
@@ -65,8 +71,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.lib.set_file(5, self.filenames[5].encode('utf-8'))
             ret = self.lib.simulate()
             sys.exit()
-            
-        
+
+    def handle_drawPressure_Button(self):
+        fig = self.widget_MapOfPressure.figure
+        fig.clear()
+
+        # ###############################################################################################################
+        alpha = self.horizontalSlider.value() / 100
+        self.horizontalSlider.setValue(self.horizontalSlider.value() + 10)
+        phi_ext = 2 * np.pi * 0.5
+
+        def flux_qubit_potential(phi_m, phi_p):
+            return 2 + alpha - 2 * np.cos(phi_p) * np.cos(phi_m) - alpha * np.cos(phi_ext - 2 * phi_p)
+
+        phi_m = np.linspace(0, 2 * np.pi, 100)
+        phi_p = np.linspace(0, 2 * np.pi, 100)
+        X, Y = np.meshgrid(phi_p, phi_m)
+        Z = flux_qubit_potential(X, Y).T
+        # ###############################################################################################################
+
+        ax = fig.add_subplot(111)
+
+        p = ax.pcolor(X / (2 * np.pi), Y / (2 * np.pi), Z, cmap=plt.cm.RdBu, vmin=abs(Z).min(), vmax=abs(Z).max())
+
+        cb = fig.colorbar(p)
+
+        self.widget_MapOfPressure.canvas.draw()
         
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
