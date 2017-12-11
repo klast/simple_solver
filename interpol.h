@@ -18,6 +18,8 @@ public:
 
     vector<double> a;
     vector<double> b;
+    vector<double> input_x;
+    vector<double> input_y;
 
 public:
 
@@ -29,8 +31,12 @@ public:
     {
         a.resize(n);
         b.resize(n);
+        this->input_x.resize(n);
+        this->input_y.resize(n);
         nodes = n;
         lenght = l;
+        this->input_x = input_x;
+        this->input_y = input_y;
 
         for (int i = 0; i < nodes - 1; i++)
         {
@@ -45,8 +51,18 @@ public:
 
     double y(double x)
     {
-        int dx = int((x*nodes)/lenght);
-        return a[dx]*x + b[dx];
+        int i;
+        for(i = 0; i < nodes - 1; i++)
+        {
+            if(x == input_x[i])
+                return input_y[i];
+        }
+        for(i = 0; i < nodes - 1; i++)
+        {
+            if(x >= input_x[i] && x<= input_x[i + 1])
+                return a[i] * x + b[i];
+        }
+        throw "OOOPS, INTERP error!";
     }
 };
 

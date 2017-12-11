@@ -395,11 +395,11 @@ void Solver::implicit_scheme_calc()
     solution = mat_solver.solve(pres_vec);
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
-            oil_press_next[node_x][node_y] = solution(node_x, node_y);
+            oil_press_next[node_x][node_y] = solution(node_x * ny + node_y);
 
     // Вывод отладочной информации
-    qDebug() << "#iterations" << mat_solver.iterations();
-    qDebug() << "estimated error" << mat_solver.error();
+    qDebug(logSolve()) << "#iterations" << mat_solver.iterations();
+    qDebug(logSolve()) << "estimated error" << mat_solver.error();
 }
 
 void Solver::explicit_scheme_calc()
@@ -455,7 +455,8 @@ void Solver::explicit_scheme_calc()
             double coeff_yp_y = T_yp_y * lambda_yp_y * potential_yp_y;
             double coeff_y_ym = T_y_ym * lambda_y_ym * potential_y_ym;
 
-            // Рассчитываем водонасыщенность s_w на шаге t_{n + 1}
+            // Рассчитываем водонасыщенность s_w на шаге t_{n + 1}    
+            Q_ASSERT(porosity[node_x][node_y] != 0);
             s_water_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff_xp_x - coeff_x_xm + coeff_yp_y - coeff_y_ym);
         };
 }

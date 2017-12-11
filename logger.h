@@ -2,6 +2,7 @@
 #define LOGGER_H
 
 #include <QLoggingCategory>
+#include <QtGlobal>
 
 Q_DECLARE_LOGGING_CATEGORY(logRead)
 Q_DECLARE_LOGGING_CATEGORY(logInit)
