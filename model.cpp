@@ -12,8 +12,8 @@ int Model::simulate()
     qDebug() << "Круто!";
     read();
     init();
+    solve();
     return 1;
-    //solve();
 }
 
 void Model::read()

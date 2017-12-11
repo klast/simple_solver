@@ -29,8 +29,7 @@ SOURCES += \
         reader.cpp \
         model.cpp \
         solver.cpp \
-        logger.cpp \
-    interpol.cpp
+        logger.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -38,7 +37,7 @@ HEADERS += \
         model.h \
         solver.h \
         logger.h \
-    interpol.h
+        interpol.h
 
 FORMS += \
         mainwindow.ui

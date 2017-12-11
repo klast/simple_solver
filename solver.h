@@ -4,9 +4,18 @@
 // Стандартные библиотеки C++
 #include <vector>
 #include "logger.h"
+#include "interpol.h"
 
 typedef QMap<QString, QVector<double>> input_data_type;
 typedef std::vector< std::vector<double> > vector_double_2d;
+
+enum Side
+{
+    X_PLUS,
+    X_MINUS,
+    Y_PLUS,
+    Y_MINUS
+};
 
 /*!
   \class Well
@@ -37,7 +46,7 @@ class Solver
 private:
 
     // Постоянные параметры
-    double compress_oil; // коэффициент сжимаемости нефти [1 / атм]
+    double compress_oil; //! TODO: нужен ли?
     double compress_water; // коэффициент сжимаемости воды [1 / атм]
     double viscosity_oil; // вязкость нефти [Па с]
     double viscosity_water; // вязкость воды [Па с]
@@ -63,9 +72,9 @@ private:
     vector_double_2d water_press; // давление воды [1 Па]
     vector_double_2d oil_press_prev; // давление нефти на n внутренней итерации [1 Па]
     vector_double_2d oil_press_next; // давление нефти на n + 1 внутренней итерации [1 Па]
-    vector_double_2d water_press_prev; // давление воды на n внутренней итерации [1 Па]
-    vector_double_2d water_press_next; // давление воды на n + 1 внутренней итерации [1 Па]
-    vector_double_2d pressure; //! давление
+    vector_double_2d s_water_prev; // давление воды на n внутренней итерации [1 Па]
+    vector_double_2d s_water_next; // давление воды на n + 1 внутренней итерации [1 Па]
+    vector_double_2d pressure; //! давление (является "начальным" на каждом глобальном шаге (оно обновляется))
     vector_double_2d tops; //! глубины ячеек
     vector_double_2d porosity; //! пористость
     vector_double_2d permx; //! проницаемость по OX
@@ -94,6 +103,9 @@ private:
     std::vector<double> krw_init;
     std::vector<double> krow_init;
     std::vector<double> pcow_init;
+    L_Interpol krw_inter;
+    L_Interpol krow_inter;
+    L_Interpol pcow_inter;
     
     static const int MAX_INNER_ITERATIONS = 100; // Максимальное число внутренних итераций
 
@@ -139,6 +151,9 @@ public:
     void init_swof(input_data_type &input_data);
 
     void init_array(QVector<double> &data , vector_double_2d *arr);
+
+    void fill_data();
+    double middle_point(vector_double_2d &arr, int i, int j, Side side);
 
 };
 
