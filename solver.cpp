@@ -38,7 +38,7 @@ void Solver::init(input_data_type &input_data)
     for(int i = 0; i < nx; i++)
     {
         //! SWAT == 0.4, инициализация
-        std::vector<double> tmp(100);
+        std::vector<double> tmp(ny);
         std::fill(tmp.begin(), tmp.begin() + tmp.size(), 0.4);
         s_water_init.push_back(tmp);
     }
@@ -137,9 +137,9 @@ void Solver::init_swof(input_data_type &input_data)
 void Solver::init_wells(input_data_type &input_data)
 {
     prod1.set_location(1, 1);
-    prod2.set_location(98, 98);
-    inj1.set_location(1, 98);
-    inj2.set_location(98, 1);
+    prod2.set_location(nx - 2, ny - 2);
+    inj1.set_location(1, ny - 2);
+    inj2.set_location(nx - 2, 1);
     //! Инициализация дебитов и приемистостей
     QVector<double> wellinfo = input_data["wellinfo"];
     int wellinfo_size = wellinfo.size() / 4;
@@ -166,7 +166,7 @@ void Solver::init_array(QVector<double> &data , vector_double_2d *arr)
 {
     for(int i = 0; i < nx; i++)
     {
-        std::vector<double> this_row(100);
+        std::vector<double> this_row(ny);
         std::copy(data.begin() + i * ny, data.begin() + (i + 1) * ny, this_row.begin());
         arr->push_back(this_row);
     }
@@ -238,17 +238,23 @@ void Solver::inner_solve(double begin_time, double end_time)
         s_water_next = s_water_init;
         oil_press_next = pressure;
 
+        // Обновим данные по исходной матрице водонасыщенности
+        fill_data();
+
         while((residual >= epsilon) && (num_inner_it < MAX_INNER_ITERATIONS))
         {
             // TODO: проверить корректность копирования
             s_water_prev = s_water_next;
             oil_press_prev = oil_press_next;
 
+            // IMPES: явная по водонасыщенности
+            explicit_scheme_calc();
+
             // Заполнение двумерных матриц проницаемостей и капиллярки
             fill_data();
 
+            // IMPES: неявная по давлению
             implicit_scheme_calc();
-            explicit_scheme_calc();
 
             residual = calc_residual();
 
@@ -302,9 +308,9 @@ void Solver::fill_data()
     qDebug(logSolve()) << "Заполняем данные, зависящие от водонасыщенности";
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++) {
-            k_relat_oil[node_x][node_y] = krow_inter.y(s_water_prev[node_x][node_y]);
-            k_relat_water[node_x][node_y] = krw_inter.y(s_water_prev[node_x][node_y]);
-            capillary_press[node_x][node_y] = pcow_inter.y(s_water_prev[node_x][node_y]);
+            k_relat_oil[node_x][node_y] = krow_inter.y(s_water_next[node_x][node_y]);
+            k_relat_water[node_x][node_y] = krw_inter.y(s_water_next[node_x][node_y]);
+            capillary_press[node_x][node_y] = pcow_inter.y(s_water_next[node_x][node_y]);
         };
 }
 
@@ -410,8 +416,6 @@ void Solver::implicit_scheme_calc()
 
 void Solver::explicit_scheme_calc()
 {
-    // TODO: рассчитать все параметры, зависящие от водонасыщенности s_w, при s_w = s_w(t_{n + 1})
-    fill_data();
     qInfo(logSolve()) << "Начинаем расчет по явной схеме";
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
@@ -423,13 +427,13 @@ void Solver::explicit_scheme_calc()
             border[Y_MINUS]  = (node_y == ny - 1);
             border[Y_PLUS]  = (node_y == 0);
 
-            Point<bool> T_coeff;
+            Point<double> T_coeff;
             // Коэффициенты T в точках (i +, j) и (i -, j) (здесь и далее см. обозн. в схеме Емченко)
-            T_coeff[X_PLUS] = dy * dz / dx * middle_point(k_absol, node_x, node_y, X_PLUS);
+            T_coeff[X_PLUS]  = dy * dz / dx * middle_point(k_absol, node_x, node_y, X_PLUS);
             T_coeff[X_MINUS] = dy * dz / dx * middle_point(k_absol, node_x, node_y, X_MINUS);
 
             // Коэффициенты T в точках (i, j +) и (i, j -)
-            T_coeff[Y_PLUS] = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_PLUS);
+            T_coeff[Y_PLUS]  = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_PLUS);
             T_coeff[Y_MINUS] = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_MINUS);
 
             Point<double> lambda;
@@ -440,21 +444,21 @@ void Solver::explicit_scheme_calc()
             // TODO: подумать, как работать с давлением воды (вводить его или пересчитывать через капиллярное давление и давление нефти)
             Point<double> press;
             // Давление воды в точках (i +, j) и (i -, j)
-            press[X_PLUS] = (border[X_PLUS]) ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_next[node_x + 1][node_y] - oil_press_next[node_x    ][node_y]);
-            press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_next[node_x    ][node_y] - oil_press_next[node_x - 1][node_y]);
+            press[X_PLUS]  = (border[X_PLUS])  ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_prev[node_x + 1][node_y] - oil_press_prev[node_x    ][node_y]);
+            press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_prev[node_x    ][node_y] - oil_press_prev[node_x - 1][node_y]);
 
             // Давление воды в точках (i, j +) и (i, j -)
-            press[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_next[node_x][node_y + 1] - oil_press_next[node_x][node_y    ]);
-            press[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_next[node_x][node_y    ] - oil_press_next[node_x][node_y - 1]);
+            press[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
+            press[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
 
             Point<double> potential;
             // Потенциал Phi в точках (i +, j) и (i -, j)
-            potential[X_PLUS] = (border[X_PLUS]) ? 0.0 : press[X_PLUS] - gravity * density_water * (heights[node_x + 1][node_y] - heights[node_x    ][node_y]);
+            potential[X_PLUS]  = (border[X_PLUS])  ? 0.0 : press[X_PLUS] - gravity * density_water * (heights[node_x + 1][node_y] - heights[node_x    ][node_y]);
             potential[X_MINUS] = (border[X_MINUS]) ? 0.0 : press[X_MINUS] - gravity * density_water * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
 
             // Потенциал Phi в точках (i, j +) и (i, j -)
-            potential[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : press[Y_PLUS] - gravity * density_water * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
-            potential[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : press[Y_MINUS] - gravity * density_water * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
+            potential[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : press[Y_PLUS] - gravity * density_water * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
+            potential[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : press[Y_MINUS] - gravity * density_water * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
 
             // Слагаемые, полученные при разложении интеграла
             Point<double> coeff;
@@ -462,14 +466,13 @@ void Solver::explicit_scheme_calc()
                 coeff[side] = T_coeff[side] * lambda[side] * potential[side];
 
             // Рассчитываем водонасыщенность s_w на шаге t_{n + 1}    
-
             if(border[X_PLUS] || border[X_MINUS] || border[Y_PLUS] || border[Y_MINUS])
                 s_water_next[node_x][node_y] = 0;
             else
             {
                 Q_ASSERT(porosity[node_x][node_y] != 0);
                 s_water_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff[X_PLUS] - coeff[X_MINUS] + coeff[Y_PLUS] - coeff[Y_MINUS]);
-            }
+            };
         };
     qDebug(logSolve()) << "Значение водонасыщенности найдено";
 }
