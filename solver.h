@@ -9,13 +9,18 @@
 typedef QMap<QString, QVector<double>> input_data_type;
 typedef std::vector< std::vector<double> > vector_double_2d;
 
-enum Side
+enum NODE_SIDE
 {
     X_PLUS,
     X_MINUS,
     Y_PLUS,
-    Y_MINUS
+    Y_MINUS,
+    X_Y
 };
+
+template<class Type>
+using Point = std::array<Type, 5>;
+
 
 /*!
   \class Well
@@ -106,6 +111,7 @@ private:
     L_Interpol pcow_inter;
     
     static const int MAX_INNER_ITERATIONS = 100; // Максимальное число внутренних итераций
+    const std::array<int, 4> sides { { NODE_SIDE::X_PLUS, NODE_SIDE::X_MINUS, NODE_SIDE::Y_PLUS, NODE_SIDE::Y_MINUS } };
 
 public:
 
@@ -151,7 +157,7 @@ public:
     void init_array(QVector<double> &data , vector_double_2d *arr);
 
     void fill_data();
-    double middle_point(vector_double_2d &arr, int i, int j, Side side);
+    double middle_point(vector_double_2d &arr, int i, int j, const int side);
 
 };
 

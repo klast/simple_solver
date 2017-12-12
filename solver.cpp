@@ -172,7 +172,7 @@ void Solver::init_array(QVector<double> &data , vector_double_2d *arr)
     }
 }
 
-double Solver::middle_point(vector_double_2d &arr, int i, int j, Side side)
+double Solver::middle_point(vector_double_2d &arr, int i, int j, const int side)
 {
     // Флаг, определяющий принадлежность элемента границе сетки
     bool right_border = (i == nx - 1);
@@ -182,19 +182,19 @@ double Solver::middle_point(vector_double_2d &arr, int i, int j, Side side)
 
     switch(side)
     {
-    case Side::X_PLUS:
+    case NODE_SIDE::X_PLUS:
     {
         return right_border ? 0.0 : (arr[i + 1][j] + arr[i][j]) * 0.5;
     }
-    case Side::X_MINUS:
+    case NODE_SIDE::X_MINUS:
     {
         return left_border ? 0.0 : (arr[i - 1][j] + arr[i][j]) * 0.5;
     }
-    case Side::Y_PLUS:
+    case NODE_SIDE::Y_PLUS:
     {
         return down_border ? 0.0 : (arr[i][j + 1] + arr[i][j]) * 0.5;
     }
-    case Side::Y_MINUS:
+    case NODE_SIDE::Y_MINUS:
     {
         return up_border ? 0.0 : (arr[i][j - 1] + arr[i][j]) * 0.5;
     }
@@ -206,7 +206,7 @@ void Solver::solve()
 {
     for (int step = 0; step < num_global_steps; step++)
     {
-
+        qInfo(logSolve()) << "Начитаем" << step << "шаг";
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
         inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
         //! TODO(Вова): сохраняем полученное решение в h5
@@ -266,6 +266,7 @@ void Solver::inner_solve(double begin_time, double end_time)
             if (dt < 1.0E-16)
                 throw "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
         };
+        qInfo(logSolve()) << "Количество внутренних итераций =" << num_inner_it;
 
         // TODO: обновляем необходимые данные класса Solver
         s_water_init = s_water_next;
@@ -291,11 +292,14 @@ double Solver::calc_residual()
     norm_sw = sqrt(norm_sw);
     norm_po = sqrt(norm_po);
 
+    qInfo(logSolve()) << "Невязка по водонасыщенности =" << norm_sw << ", по давлению нефти =" << norm_po;
+
     return std::max(norm_sw, norm_po);
 }
 
 void Solver::fill_data()
 {
+    qDebug(logSolve()) << "Заполняем данные, зависящие от водонасыщенности";
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++) {
             k_relat_oil[node_x][node_y] = krow_inter.y(s_water_prev[node_x][node_y]);
@@ -306,14 +310,15 @@ void Solver::fill_data()
 
 void Solver::implicit_scheme_calc()
 {
+    qDebug(logSolve()) << "Начинаем расчет по неявной схеме";
     Eigen::SparseMatrix<double> pres_mat(nx * ny, nx * ny); // матрица коэффициентов в уравнениях на давление нефти
     Eigen::VectorXd pres_vec(nx * ny); // правая часть СЛАУ в уравнениях на давление нефти
     Eigen::BiCGSTAB< Eigen::SparseMatrix<double> > mat_solver; // решатель системы СЛАУ
 
     // Структура "триплет" для ускорения заполнения разреженной матрицы
-    typedef Eigen::Triplet<double> T;
-    std::vector<T> tripletList;
-
+    typedef Eigen::Triplet<double> Trip;
+    std::vector<Trip> tripletList;
+    qDebug(logSolve()) << "Начинаем формирование матрицы";
     for (int node_y = 0; node_y < ny; node_y++)
         for (int node_x = 0; node_x < nx; node_x++)
         {
@@ -321,75 +326,76 @@ void Solver::implicit_scheme_calc()
             // Самих неизвестных величин M * N штук, поэтому матрица
             // имеет размер M * N. Для облегчения работы вводятся
             // переменные, в которых пересчитывается номер элемента в матрице.
-            int m_xp_y = (node_x + 1) + node_y * ny; // номер p_{i + 1, j} в матрице
-            int m_x_y  =  node_x      + node_y * ny; // номер p_{i    , j} в матрице
-            int m_xm_y = (node_x - 1) + node_y * ny; // номер p_{i - 1, j} в матрице
-            int m_x_yp = node_x + (node_y + 1) * ny; // номер p_{i, j + 1} в матрице
-            int m_x_ym = node_x + (node_y - 1) * ny; // номер p_{i, j - 1} в матрице
+            Point<int> index;
+            index[X_PLUS] = (node_x + 1) + node_y * ny; // номер p_{i + 1, j} в матрице
+            index[X_Y] =     node_x      + node_y * ny; // номер p_{i    , j} в матрице
+            index[X_MINUS] = (node_x - 1) + node_y * ny;// номер p_{i - 1, j} в матрице
+            index[Y_PLUS] = node_x + (node_y + 1) * ny; // номер p_{i, j + 1} в матрице
+            index[Y_MINUS] = node_x + (node_y - 1) * ny;// номер p_{i, j - 1} в матрице
 
             // Флаг, определяющий принадлежность элемента границе сетки
-            bool right_border = (node_x == nx - 1);
-            bool left_border  = (node_x == 0);
-            bool down_border  = (node_y == ny - 1);
-            bool up_border    = (node_y == 0);
+            Point<bool> border;
+            border[X_PLUS] = (node_x == nx - 1);
+            border[X_MINUS] = (node_x == 0);
+            border[Y_MINUS] = (node_y == ny - 1);
+            border[Y_PLUS] = (node_y == 0);
 
             // Коэффициенты T в точках (i +, j), (i -, j) (i, j +) и (i, j -) (здесь и далее см. обозн. в схеме Емченко)
-            double T_xp_x = middle_point(k_absol, node_x, node_y, X_PLUS) * dy * dz / dx;
-            double T_x_xm = middle_point(k_absol, node_x, node_y, X_MINUS) * dy * dz / dx;
-            double T_yp_y = middle_point(k_absol, node_x, node_y, Y_PLUS) * dx * dz / dy;
-            double T_y_ym = middle_point(k_absol, node_x, node_y, Y_MINUS) * dx * dz / dy;
+            Point<double> T_coeff;
+            T_coeff[X_PLUS] = middle_point(k_absol, node_x, node_y, X_PLUS) * dy * dz / dx;
+            T_coeff[X_MINUS] = middle_point(k_absol, node_x, node_y, X_MINUS) * dy * dz / dx;
+            T_coeff[Y_PLUS] = middle_point(k_absol, node_x, node_y, Y_PLUS) * dx * dz / dy;
+            T_coeff[Y_MINUS] = middle_point(k_absol, node_x, node_y, Y_MINUS) * dx * dz / dy;
 
+            Point<double> lambda_oil, lambda_water;
             // Коэффициенты lambda_o * B в точках (i +, j), (i -, j), (i, j +) и (i, j -)
-            double lambda_oil_xp_x = middle_point(k_relat_oil, node_x, node_y, X_PLUS) / viscosity_oil;
-            double lambda_oil_x_xm = middle_point(k_relat_oil, node_x, node_y, X_MINUS) / viscosity_oil;
-            double lambda_oil_yp_y = middle_point(k_relat_oil, node_x, node_y, Y_PLUS) / viscosity_oil;
-            double lambda_oil_y_ym = middle_point(k_relat_oil, node_x, node_y, Y_MINUS) / viscosity_oil;
-
-            // Коэффициенты lambda_w * B в точках (i +, j), (i -, j), (i, j +) и (i, j -)
-            double lambda_water_xp_x = middle_point(k_relat_water, node_x, node_y, X_PLUS) / viscosity_water;
-            double lambda_water_x_xm = middle_point(k_relat_water, node_x, node_y, X_MINUS) / viscosity_water;
-            double lambda_water_yp_y = middle_point(k_relat_water, node_x, node_y, Y_PLUS) / viscosity_water;
-            double lambda_water_y_ym = middle_point(k_relat_water, node_x, node_y, Y_MINUS) / viscosity_water;
+            for(auto & side: sides)
+            {
+                lambda_oil[side] = middle_point(k_relat_oil, node_x, node_y, side) / viscosity_oil;
+                lambda_water[side] = middle_point(k_relat_water, node_x, node_y, side) / viscosity_water;
+            }
 
             // Капиллярное давление в точках (i +, j), (i -, j),  (i, j +) и (i, j -)
-            double pressure_xp_x = (right_border) ? 0.0 : capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y];
-            double pressure_x_xm = (left_border) ? 0.0 : capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y];
-            double pressure_yp_y = (down_border) ? 0.0 : capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ];
-            double pressure_y_ym = (up_border) ? 0.0 : capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1];
+            Point<double> press;
+            press[X_PLUS] = (border[X_PLUS]) ? 0.0 : capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y];
+            press[X_MINUS] = (border[X_MINUS]) ? 0.0 : capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y];
+            press[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ];
+            press[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1];
 
+            Point<double> grav_press;
             // Давление в следствие гравитации в точках (i +, j), (i -, j),  (i, j +) и (i, j -)
-            double grav_press_xp_x = (right_border) ? 0.0 : gravity * (heights[node_x + 1][node_y] - heights[node_x    ][node_y]);
-            double grav_press_x_xm = (left_border) ? 0.0 : gravity * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
-            double grav_press_yp_y = (down_border) ? 0.0 : gravity * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
-            double grav_press_y_ym = (up_border) ? 0.0 : gravity * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
+            grav_press[X_PLUS] = (border[X_PLUS]) ? 0.0 : gravity * (heights[node_x + 1][node_y] - heights[node_x    ][node_y]);
+            grav_press[X_MINUS] = (border[X_MINUS]) ? 0.0 : gravity * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
+            grav_press[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : gravity * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
+            grav_press[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : gravity * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
 
             // Заполнение матрицы
             // TODO: убрать проверки (лишние)
-            double temp_xp_x = (right_border) ? 0.0 : T_xp_x * (lambda_oil_xp_x + lambda_water_xp_x);
-            double temp_x_xm = (left_border)  ? 0.0 : T_x_xm * (lambda_oil_x_xm + lambda_water_x_xm);
-            double temp_yp_y = (down_border)  ? 0.0 : T_yp_y * (lambda_oil_yp_y + lambda_water_yp_y);
-            double temp_y_ym = (up_border)    ? 0.0 : T_y_ym * (lambda_oil_y_ym + lambda_water_y_ym);
-            double temp_x_y  = - (temp_xp_x + temp_x_xm + temp_yp_y + temp_y_ym);
+            Point<double> temp;
+            temp[X_PLUS] = (border[X_PLUS]) ? 0.0 : T_coeff[X_PLUS] * (lambda_oil[X_PLUS] + lambda_water[X_PLUS]);
+            temp[X_MINUS] = (border[X_MINUS]) ? 0.0 : T_coeff[X_MINUS] * (lambda_oil[X_MINUS] + lambda_water[X_MINUS]);
+            temp[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : T_coeff[Y_PLUS] * (lambda_oil[Y_PLUS] + lambda_water[Y_PLUS]);
+            temp[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : T_coeff[Y_MINUS] * (lambda_oil[Y_MINUS] + lambda_water[Y_MINUS]);
+            temp[X_Y]  = - (temp[X_PLUS] + temp[X_MINUS] + temp[Y_PLUS] + temp[Y_MINUS]);
 
-            if (temp_xp_x != 0.0) tripletList.push_back(T(m_xp_y, m_x_y, temp_xp_x));
-            if (temp_x_xm != 0.0) tripletList.push_back(T(m_xm_y, m_x_y, temp_x_xm));
-            if (temp_yp_y != 0.0) tripletList.push_back(T(m_x_yp, m_x_y, temp_yp_y));
-            if (temp_y_ym != 0.0) tripletList.push_back(T(m_x_ym, m_x_y, temp_y_ym));
-            if (temp_x_y != 0.0) tripletList.push_back(T(m_x_y, m_x_y, temp_x_y));
+            for(auto & side: sides)
+                if(temp[side] != 0.0) tripletList.push_back(Trip(index[side], index[X_Y], temp[side]));
+            if (temp[X_Y] != 0.0) tripletList.push_back(Trip(index[X_Y], index[X_Y], temp[X_Y]));
 
             // Заполнение правой части
-            temp_xp_x = (right_border) ? 0.0 : T_xp_x * (grav_press_xp_x * (density_oil * lambda_oil_xp_x + density_water * lambda_water_xp_x) + lambda_water_xp_x * pressure_xp_x);
-            temp_x_xm = (left_border)  ? 0.0 : T_x_xm * (grav_press_x_xm * (density_oil * lambda_oil_x_xm + density_water * lambda_water_x_xm) + lambda_water_x_xm * pressure_x_xm);
-            temp_yp_y = (down_border)  ? 0.0 : T_yp_y * (grav_press_yp_y * (density_oil * lambda_oil_yp_y + density_water * lambda_water_yp_y) + lambda_water_yp_y * pressure_yp_y);
-            temp_y_ym = (up_border)    ? 0.0 : T_y_ym * (grav_press_y_ym * (density_oil * lambda_oil_y_ym + density_water * lambda_water_y_ym) + lambda_water_y_ym * pressure_y_ym);
-            pres_vec(m_x_y) = - temp_xp_x + temp_x_xm - temp_yp_y + temp_y_ym;
+            temp[X_PLUS] = (border[X_PLUS]) ? 0.0 : T_coeff[X_PLUS] * (grav_press[X_PLUS] * (density_oil * lambda_oil[X_PLUS] + density_water * lambda_water[X_PLUS]) + lambda_water[X_PLUS] * press[X_PLUS]);
+            temp[Y_MINUS] = (border[X_MINUS])  ? 0.0 : T_coeff[X_MINUS] * (grav_press[X_MINUS] * (density_oil * lambda_oil[X_MINUS] + density_water * lambda_water[X_MINUS]) + lambda_water[X_MINUS] * press[X_MINUS]);
+            temp[Y_PLUS] = (border[Y_MINUS])  ? 0.0 : T_coeff[Y_PLUS] * (grav_press[Y_PLUS] * (density_oil * lambda_oil[Y_PLUS] + density_water * lambda_water[Y_PLUS]) + lambda_water[Y_PLUS] * press[Y_PLUS]);
+            temp[Y_MINUS] = (border[Y_PLUS])    ? 0.0 : T_coeff[Y_MINUS] * (grav_press[Y_MINUS] * (density_oil * lambda_oil[Y_MINUS] + density_water * lambda_water[Y_MINUS]) + lambda_water[Y_MINUS] * press[Y_MINUS]);
+
+            pres_vec(index[X_Y]) = - temp[X_PLUS] + temp[X_MINUS] - temp[Y_PLUS] + temp[Y_MINUS];
         };
 
 
     pres_mat.setFromTriplets(tripletList.begin(), tripletList.end());
     mat_solver.compute(pres_mat);
     mat_solver.analyzePattern(pres_mat);
-
+    qDebug(logSolve()) << "Вызываем решатель";
     // Получить вектор решений
     Eigen::VectorXd solution(nx * ny);
     solution = mat_solver.solve(pres_vec);
@@ -398,65 +404,72 @@ void Solver::implicit_scheme_calc()
             oil_press_next[node_x][node_y] = solution(node_x * ny + node_y);
 
     // Вывод отладочной информации
-    qDebug(logSolve()) << "#iterations" << mat_solver.iterations();
-    qDebug(logSolve()) << "estimated error" << mat_solver.error();
+    qDebug(logSolve()) << "Количество итераций" << mat_solver.iterations();
+    qDebug(logSolve()) << "Норма матрицы" << mat_solver.error();
 }
 
 void Solver::explicit_scheme_calc()
 {
     // TODO: рассчитать все параметры, зависящие от водонасыщенности s_w, при s_w = s_w(t_{n + 1})
     fill_data();
-
+    qInfo(logSolve()) << "Начинаем расчет по явной схеме";
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
         {
             // Флаг, определяющий принадлежность элемента границе сетки
-            bool right_border = (node_x == nx - 1);
-            bool left_border  = (node_x == 0);
-            bool down_border  = (node_y == ny - 1);
-            bool up_border    = (node_y == 0);
+            Point<bool> border;
+            border[X_PLUS] = (node_x == nx - 1);
+            border[X_MINUS]  = (node_x == 0);
+            border[Y_MINUS]  = (node_y == ny - 1);
+            border[Y_PLUS]  = (node_y == 0);
 
+            Point<bool> T_coeff;
             // Коэффициенты T в точках (i +, j) и (i -, j) (здесь и далее см. обозн. в схеме Емченко)
-            double T_xp_x = dy * dz / dx * middle_point(k_absol, node_x, node_y, X_PLUS);
-            double T_x_xm = dy * dz / dx * middle_point(k_absol, node_x, node_y, X_MINUS);
+            T_coeff[X_PLUS] = dy * dz / dx * middle_point(k_absol, node_x, node_y, X_PLUS);
+            T_coeff[X_MINUS] = dy * dz / dx * middle_point(k_absol, node_x, node_y, X_MINUS);
 
             // Коэффициенты T в точках (i, j +) и (i, j -)
-            double T_yp_y = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_PLUS);
-            double T_y_ym = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_MINUS);
+            T_coeff[Y_PLUS] = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_PLUS);
+            T_coeff[Y_MINUS] = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_MINUS);
 
+            Point<double> lambda;
             // Коэффициенты lambda в точках (i +, j) и (i -, j)
-            double lambda_xp_x = middle_point(k_relat_water, node_x, node_y, X_PLUS) / viscosity_water / compress_water;
-            double lambda_x_xm = middle_point(k_relat_water, node_x, node_y, X_MINUS) / viscosity_water / compress_water;
-
-            // Коэффициенты lambda в точках (i, j +) и (i, j -)
-            double lambda_yp_y = middle_point(k_relat_water, node_x, node_y, Y_PLUS) / viscosity_water / compress_water;
-            double lambda_y_ym = middle_point(k_relat_water, node_x, node_y, Y_MINUS) / viscosity_water / compress_water;
+            for(auto & side: sides)
+                lambda[side] = middle_point(k_relat_water, node_x, node_y, side) / viscosity_water / compress_water;
 
             // TODO: подумать, как работать с давлением воды (вводить его или пересчитывать через капиллярное давление и давление нефти)
+            Point<double> press;
             // Давление воды в точках (i +, j) и (i -, j)
-            double pressure_xp_x = (right_border) ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_next[node_x + 1][node_y] - oil_press_next[node_x    ][node_y]);
-            double pressure_x_xm = (left_border) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_next[node_x    ][node_y] - oil_press_next[node_x - 1][node_y]);
+            press[X_PLUS] = (border[X_PLUS]) ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_next[node_x + 1][node_y] - oil_press_next[node_x    ][node_y]);
+            press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_next[node_x    ][node_y] - oil_press_next[node_x - 1][node_y]);
 
             // Давление воды в точках (i, j +) и (i, j -)
-            double pressure_yp_y = (down_border) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_next[node_x][node_y + 1] - oil_press_next[node_x][node_y    ]);
-            double pressure_y_ym = (up_border) ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_next[node_x][node_y    ] - oil_press_next[node_x][node_y - 1]);
+            press[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_next[node_x][node_y + 1] - oil_press_next[node_x][node_y    ]);
+            press[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_next[node_x][node_y    ] - oil_press_next[node_x][node_y - 1]);
 
+            Point<double> potential;
             // Потенциал Phi в точках (i +, j) и (i -, j)
-            double potential_xp_x = (right_border) ? 0.0 : pressure_xp_x - gravity * density_water * (heights[node_x + 1][node_y] - heights[node_x    ][node_y]);
-            double potential_x_xm = (left_border) ? 0.0 : pressure_x_xm - gravity * density_water * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
+            potential[X_PLUS] = (border[X_PLUS]) ? 0.0 : press[X_PLUS] - gravity * density_water * (heights[node_x + 1][node_y] - heights[node_x    ][node_y]);
+            potential[X_MINUS] = (border[X_MINUS]) ? 0.0 : press[X_MINUS] - gravity * density_water * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
 
             // Потенциал Phi в точках (i, j +) и (i, j -)
-            double potential_yp_y = (down_border) ? 0.0 : pressure_yp_y - gravity * density_water * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
-            double potential_y_ym = (up_border) ? 0.0 : pressure_y_ym - gravity * density_water * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
+            potential[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : press[Y_PLUS] - gravity * density_water * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
+            potential[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : press[Y_MINUS] - gravity * density_water * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
 
             // Слагаемые, полученные при разложении интеграла
-            double coeff_xp_x = T_xp_x * lambda_xp_x * potential_xp_x;
-            double coeff_x_xm = T_x_xm * lambda_x_xm * potential_x_xm;
-            double coeff_yp_y = T_yp_y * lambda_yp_y * potential_yp_y;
-            double coeff_y_ym = T_y_ym * lambda_y_ym * potential_y_ym;
+            Point<double> coeff;
+            for(auto & side: sides)
+                coeff[side] = T_coeff[side] * lambda[side] * potential[side];
 
             // Рассчитываем водонасыщенность s_w на шаге t_{n + 1}    
-            Q_ASSERT(porosity[node_x][node_y] != 0);
-            s_water_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff_xp_x - coeff_x_xm + coeff_yp_y - coeff_y_ym);
+
+            if(border[X_PLUS] || border[X_MINUS] || border[Y_PLUS] || border[Y_MINUS])
+                s_water_next[node_x][node_y] = 0;
+            else
+            {
+                Q_ASSERT(porosity[node_x][node_y] != 0);
+                s_water_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff[X_PLUS] - coeff[X_MINUS] + coeff[Y_PLUS] - coeff[Y_MINUS]);
+            }
         };
+    qDebug(logSolve()) << "Значение водонасыщенности найдено";
 }
