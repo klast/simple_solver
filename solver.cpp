@@ -69,8 +69,13 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "Плотность воды =" << density_water;
     init_array(input_data["tops"], &tops);
     qInfo(logInit()) << "Глубины ячеек =" << tops;
+
+    //! Перевод АТМ в СИ
+    for(auto & item: input_data["pressure"])
+        item *= 1.0E+5;
     init_array(input_data["pressure"], &pressure);
     qInfo(logInit()) << "Давление =" << pressure;
+
     init_array(input_data["poro"], &porosity);
     qInfo(logInit()) << "Пористость =" << porosity;
     init_array(input_data["permx"], &permx);
@@ -146,10 +151,12 @@ void Solver::init_wells(input_data_type &input_data)
     for(int i = 0; i < wellinfo_size; i++)
     {
         int index = i * 4;
-        prod1.values.push_back(wellinfo[index]);
-        prod2.values.push_back(wellinfo[index + 1]);
-        inj1.values.push_back(wellinfo[index + 2]);
-        inj2.values.push_back(wellinfo[index + 3]);
+        //! Перевод в СИ
+        const double m3_sut = 24 * 3600;
+        prod1.values.push_back(wellinfo[index] / m3_sut);
+        prod2.values.push_back(wellinfo[index + 1] / m3_sut);
+        inj1.values.push_back(wellinfo[index + 2] / m3_sut);
+        inj2.values.push_back(wellinfo[index + 3] / m3_sut);
     }
     qInfo(logInit()) << "prod1 (" << prod1.ix + 1 << "," << prod1.iy + 1 << ")";
     qInfo(logInit()) << "prod2 (" << prod2.ix + 1 << "," << prod2.iy + 1 << ")";
