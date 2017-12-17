@@ -113,6 +113,9 @@ void Solver::init(input_data_type &input_data)
         k_relat_oil[node].resize(ny);
         k_relat_water[node].resize(ny);
     };
+
+    // Отмечаем, что водонасыщенность меньше 1
+    sw_over_1 = false;
 }
 
 void Solver::init_swof(input_data_type &input_data)
@@ -187,6 +190,9 @@ double Solver::middle_point(vector_double_2d &arr, int i, int j, const int side)
     bool down_border  = (j == ny - 1);
     bool up_border    = (j == 0);
 
+    if (right_border || left_border || down_border || up_border)
+        return 0.0;
+
     switch(side)
     {
     case NODE_SIDE::X_PLUS:
@@ -257,22 +263,25 @@ void Solver::inner_solve(double begin_time, double end_time)
             // IMPES: явная по водонасыщенности
             explicit_scheme_calc();
 
-            // Заполнение двумерных матриц проницаемостей и капиллярки
-            fill_data();
+            if (!sw_over_1)
+            {
+                // Заполнение двумерных матриц проницаемостей и капиллярки
+                fill_data();
 
-            // IMPES: неявная по давлению
-            implicit_scheme_calc();
+                // IMPES: неявная по давлению
+                implicit_scheme_calc();
 
-            residual = calc_residual();
+                residual = calc_residual();
 
-            num_inner_it++;
+                num_inner_it++;
+            };
 
-            if (num_inner_it == MAX_INNER_ITERATIONS)
+            if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
             {
                 // TODO: сбросить результаты до начального состояния
                 dt = 0.5 * dt;
-                s_water_next = s_water_init;
-                oil_press_next = pressure;
+                s_water_next = s_water_prev;
+                oil_press_next = oil_press_prev;
                 continue;
             };
 
@@ -282,8 +291,8 @@ void Solver::inner_solve(double begin_time, double end_time)
         qInfo(logSolve()) << "Количество внутренних итераций =" << num_inner_it;
 
         // TODO: обновляем необходимые данные класса Solver
-        s_water_init = s_water_next;
-        pressure = oil_press_next;
+        s_water_prev = s_water_next;
+        oil_press_prev = oil_press_next;
 
         time += dt;
 
@@ -402,6 +411,16 @@ void Solver::implicit_scheme_calc()
             temp[Y_MINUS] = (border[Y_PLUS])    ? 0.0 : T_coeff[Y_MINUS] * (grav_press[Y_MINUS] * (density_oil * lambda_oil[Y_MINUS] + density_water * lambda_water[Y_MINUS]) + lambda_water[Y_MINUS] * press[Y_MINUS]);
 
             pres_vec(index[X_Y]) = - temp[X_PLUS] + temp[X_MINUS] - temp[Y_PLUS] + temp[Y_MINUS];
+
+            // Учёт скважин в правой части
+            if ((node_x == inj1.ix) && (node_y == inj1.iy))
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_water * inj1.values[step] * (dx * dy * dz);
+            if ((node_x == inj2.ix) && (node_y == inj2.iy))
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_water * inj2.values[step] * (dx * dy * dz);
+            if ((node_x == prod1.ix) && (node_y == prod1.iy))
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_oil * (- prod1.values[step]) * (dx * dy * dz);
+            if ((node_x == prod2.ix) && (node_y == prod2.iy))
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_oil * (- prod2.values[step]) * (dx * dy * dz);
         };
 
 
@@ -481,10 +500,15 @@ void Solver::explicit_scheme_calc()
                 s_water_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff[X_PLUS] - coeff[X_MINUS] + coeff[Y_PLUS] - coeff[Y_MINUS]);
             };
         };
-    s_water_next[prod1.ix][prod1.iy] -= prod1.values[step] * dx * dy * dz * dt;
-    s_water_next[prod2.ix][prod2.iy] -= prod2.values[step] * dx * dy * dz * dt;
-    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] * dx * dy * dz * dt;
-    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] * dx * dy * dz * dt;
+
+    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] / (dx * dy * dz) * dt * compress_water;
+    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] / (dx * dy * dz) * dt * compress_water;
+
+    // Если водонасыщенность превысила 1, то изменяем значение флага (необходимо для дробления шага)
+    for (int node_x = 0; node_x < nx; node_x++)
+        for (int node_y = 0; node_y < ny; node_y++)
+            if (s_water_next[node_x][node_y] > 1.0)
+                sw_over_1 = true;
 
     qDebug(logSolve()) << "Значение водонасыщенности найдено";
 }
