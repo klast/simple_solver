@@ -211,7 +211,7 @@ double Solver::middle_point(vector_double_2d &arr, int i, int j, const int side)
 
 void Solver::solve()
 {
-    for (int step = 0; step < num_global_steps; step++)
+    for (step = 0; step < num_global_steps; step++)
     {
         qInfo(logSolve()) << "Начитаем" << step << "шаг";
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
@@ -481,5 +481,10 @@ void Solver::explicit_scheme_calc()
                 s_water_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff[X_PLUS] - coeff[X_MINUS] + coeff[Y_PLUS] - coeff[Y_MINUS]);
             };
         };
+    s_water_next[prod1.ix][prod1.iy] -= prod1.values[step] * dx * dy * dz * dt;
+    s_water_next[prod2.ix][prod2.iy] -= prod2.values[step] * dx * dy * dz * dt;
+    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] * dx * dy * dz * dt;
+    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] * dx * dy * dz * dt;
+
     qDebug(logSolve()) << "Значение водонасыщенности найдено";
 }
