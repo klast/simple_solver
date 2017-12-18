@@ -1,4 +1,5 @@
 #include "model.h"
+#include <iostream>
 
 Model::Model()
 {
@@ -26,8 +27,7 @@ void Model::read()
 
 void Model::init()
 {
-    nx = reader.input_constants["nx"];
-    ny = reader.input_constants["ny"];
+    solver.set_dimens(reader.input_constants["nx"], reader.input_constants["ny"]);
     solver.init(reader.input_1d_arrays);
 }
 
@@ -39,6 +39,10 @@ void Model::solve()
 void Model::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QTextStream out(logFile.data());
+    if(type == QtCriticalMsg || type == QtInfoMsg)
+    {
+        std::cout << QDateTime::currentDateTime().toString("dd-MM-yyyy hh:mm:ss.zzz ").toStdString();
+    }
     out << QDateTime::currentDateTime().toString("dd-MM-yyyy hh:mm:ss.zzz ");
     switch(type)
     {
@@ -49,6 +53,8 @@ void Model::messageHandler(QtMsgType type, const QMessageLogContext &context, co
         case QtFatalMsg:    out << "| FATAL    "; break;
     }
     out << "| " << context.category <<"| " << msg << endl;
+    if(type == QtCriticalMsg || type == QtInfoMsg)
+        std::cout << "| " << context.category <<"| " << msg.toStdString() << endl;
     out.flush();
 }
 

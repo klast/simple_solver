@@ -12,12 +12,12 @@ bool Reader::set_file(filetypes type, QString &_filename)
     bool is_opened = this_file->open(QIODevice::ReadOnly);
     if(!is_opened)
     {
-        qCritical(logRead()) << "Ошибка открытия файла " << _filename;
+        qCritical(logRead()) << "File open error! " << _filename;
         return false;
     }
     else
     {
-        qInfo(logRead()) << "Файл " << _filename << "задан";
+        qInfo(logRead()) << "File " << _filename << "is set!";
         input_files.insert(type, this_file);
         return true;
     }
@@ -25,21 +25,31 @@ bool Reader::set_file(filetypes type, QString &_filename)
 
 void Reader::read()
 {
-     qInfo(logRead()) << "НАЧИНАЕМ СЧИТЫВАНИЕ";
+     qInfo(logRead()) << "Begginning to read";
      QString str="";
      QString s, s1;
      current_file = input_files[0].data();
-     qInfo(logRead()) << "ОТКРЫТ ФАЙЛ" << current_file->fileName();
+     qInfo(logRead()) << "Opened File" << current_file->fileName();
      read_1d_array("wellinfo");
      for(int i = 1; i < input_files.size(); i++)
      {
          if(!input_files[i])
              continue;
          current_file = input_files[i].data();
-         qInfo(logRead()) << "ОТКРЫТ ФАЙЛ" << current_file->fileName();
+         qInfo(logRead()) << "Opened File" << current_file->fileName();
          while(!current_file->atEnd())
          {
              str = current_file->readLine();
+             if(str.contains("specgrid", Qt::CaseInsensitive))
+             {
+                 str = current_file->readLine();
+                 QList<QString> my_row = str.split(QRegExp("\\s"));
+                 QList<QString>::const_iterator item = my_row.constBegin();
+                 input_constants["nx"] = item->toDouble();
+                 ++item;
+                 input_constants["ny"] = item->toDouble();
+             }
+             else
              if(str.contains("swof", Qt::CaseInsensitive))
              {
                  read_1d_array("swof");
@@ -82,7 +92,7 @@ void Reader::read()
              }
          }
      }
-     qInfo(logRead()) << "СЧИТЫВАНИЕ ЗАКОНЧЕНО";
+     qInfo(logRead()) << "End reading";
 }
 
 void Reader::read_1d_array(QString keyword_name)
@@ -92,7 +102,7 @@ void Reader::read_1d_array(QString keyword_name)
     double p, pp;
     int i;
     p=0;
-    qDebug(logRead()) << "Считываю" << keyword_name;
+    qDebug(logRead()) << "Reading" << keyword_name;
     while(true)
     {
         if(current_file->atEnd())
@@ -133,7 +143,7 @@ void Reader::read_1d_array(QString keyword_name)
             }
         }
     }
-    qInfo(logRead()) << keyword_name << "- одномерный массив размером " << this_array.size() << "элементов";
+    qInfo(logRead()) << keyword_name << "- array of " << this_array.size() << "элементов";
     input_1d_arrays[keyword_name] = this_array;
 }
 

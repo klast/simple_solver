@@ -18,22 +18,19 @@ Well::Well()
 
 void Solver::init(input_data_type &input_data)
 {
-    qInfo(logInit()) << "НАЧИНАЕМ ИНИЦИАЛИЗАЦИЮ ВХОДНЫХ ДАННЫХ";
-    qInfo(logInit()) << "ИНИЦИАЛИЗАЦИЯ ПРОСТЫХ ПЕРЕМЕННЫХ";
-    nx = 100;
-    qInfo(logInit()) << "Количество ячеек по OX =" << nx;
-    ny = 100;
-    qInfo(logInit()) << "Количество ячеек по OY =" << ny;
+    qInfo(logInit()) << "Initialization begin";
+    qInfo(logInit()) << "NX =" << nx;
+    qInfo(logInit()) << "NY =" << ny;
     nz = 1;
-    qInfo(logInit()) << "Количество ячеек по OZ =" << nz;
+    qInfo(logInit()) << "NZ =" << nz;
     dx = 10;
-    qInfo(logInit()) << "Размер ячеек по OX =" << dx;
+    qInfo(logInit()) << "DX =" << dx;
     dy = 10;
-    qInfo(logInit()) << "Размер ячеек по OY =" << dy;
+    qInfo(logInit()) << "DY =" << dy;
     dz = 1;
-    qInfo(logInit()) << "Размер ячеек по OZ =" << dz;
+    qInfo(logInit()) << "DZ =" << dz;
     num_global_steps = 1000;
-    qInfo(logInit()) << "Количество глобальных временных шагов =" << num_global_steps;
+    qInfo(logInit()) << "Number of time steps" << num_global_steps;
     T = num_global_steps * 1; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
     {
@@ -42,11 +39,11 @@ void Solver::init(input_data_type &input_data)
         std::fill(tmp.begin(), tmp.begin() + tmp.size(), 0.4);
         s_water_init.push_back(tmp);
     }
-    qInfo(logInit()) << "Начальная водонасыщенность =" << 0.4;
-    qInfo(logInit()) << "ИНИЦИАЛИЗАЦИЯ СКВАЖИН";
+    qInfo(logInit()) << "SWAT =" << 0.4;
+    qInfo(logInit()) << "Well init";
     init_wells(input_data);
     init_swof(input_data);
-    qInfo(logInit()) << "ИНИЦИАЛИЗАЦИЯ СВОЙСТВ";
+    qInfo(logInit()) << "Physical constants init";
     rock = input_data["rock"].at(1);//! коэффициент сжимаемости породы
     qInfo(logInit()) << "Коэффициент сжимаемости породы =" << rock;
     b_water = input_data["pvtw"].at(1);
@@ -219,7 +216,7 @@ void Solver::solve()
 {
     for (step = 0; step < num_global_steps; step++)
     {
-        qInfo(logSolve()) << "Начитаем" << step << "шаг";
+        qInfo(logSolve()) << "Starting" << step << "step";
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
         inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
         //! TODO(Вова): сохраняем полученное решение в h5
@@ -288,7 +285,7 @@ void Solver::inner_solve(double begin_time, double end_time)
             if (dt < 1.0E-16)
                 throw "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
         };
-        qInfo(logSolve()) << "Количество внутренних итераций =" << num_inner_it;
+        qInfo(logSolve()) << "Inner iterations num =" << num_inner_it;
 
         // TODO: обновляем необходимые данные класса Solver
         s_water_prev = s_water_next;
@@ -314,7 +311,7 @@ double Solver::calc_residual()
     norm_sw = sqrt(norm_sw);
     norm_po = sqrt(norm_po);
 
-    qInfo(logSolve()) << "Невязка по водонасыщенности =" << norm_sw << ", по давлению нефти =" << norm_po;
+    qInfo(logSolve()) << "SWAT NORM =" << norm_sw << ", OIL PRESSURE NORM =" << norm_po;
 
     return std::max(norm_sw, norm_po);
 }
@@ -442,7 +439,7 @@ void Solver::implicit_scheme_calc()
 
 void Solver::explicit_scheme_calc()
 {
-    qInfo(logSolve()) << "Начинаем расчет по явной схеме";
+    qDebug(logSolve()) << "Начинаем расчет по явной схеме";
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
         {

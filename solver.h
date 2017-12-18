@@ -159,6 +159,8 @@ public:
     void init_array(QVector<double> &data , vector_double_2d *arr);
 
     void fill_data();
+
+    void set_dimens(int t_nx, int t_ny){nx = t_nx; ny = t_ny;}
     double middle_point(vector_double_2d &arr, int i, int j, const int side);
 
 };
