@@ -347,7 +347,7 @@ void Solver::implicit_scheme_calc()
     typedef Eigen::Triplet<double> Trip;
     std::vector<Trip> tripletList;
     qDebug(logSolve()) << "Начинаем формирование матрицы";
-    std::cout << "Explicit_scheme_calc begin\n";
+    std::cout << "Implicit_scheme_calc begin\n";
     for (int node_y = 0; node_y < ny; node_y++)
         for (int node_x = 0; node_x < nx; node_x++)
         {
@@ -443,7 +443,6 @@ void Solver::implicit_scheme_calc()
                 pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_oil * (- prod2.values[step]) * (dx * dy * dz);
             qInfo(logSolve()) << "pres_vec[" << index[X_Y] << "] = " << pres_vec(index[X_Y]) << endl;
         };
-    qInfo(logSolve()) << "Explicit_scheme_calc end\n";
 
     pres_mat.setFromTriplets(tripletList.begin(), tripletList.end());
     mat_solver.compute(pres_mat);
@@ -470,11 +469,12 @@ void Solver::implicit_scheme_calc()
     // Вывод отладочной информации
     qDebug(logSolve()) << "Количество итераций" << mat_solver.iterations();
     qDebug(logSolve()) << "Норма матрицы" << mat_solver.error();
+    qInfo(logSolve()) << "implicit_scheme_calc end\n";
 }
 
 void Solver::explicit_scheme_calc()
 {
-    qInfo(logSolve()) << "Implicit_scheme_calc begin\n";
+    qInfo(logSolve()) << "Explicit_scheme_calc begin\n";
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
         {
@@ -551,7 +551,7 @@ void Solver::explicit_scheme_calc()
     qInfo(logSolve()) << "S WATER NEXT\n";
     for(int i = 0; i < nx; i++)
         qInfo(logSolve()) << s_water_next[i];
-    qInfo(logSolve()) << "Implicit_scheme_calc end\n";
+    qInfo(logSolve()) << "Explicit_scheme_calc end\n";
     sw_over_1 = false;
     // Если водонасыщенность превысила 1, то изменяем значение флага (необходимо для дробления шага)
     for (int node_x = 0; node_x < nx; node_x++)
