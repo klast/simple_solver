@@ -3,6 +3,10 @@
 
 // Стандартные библиотеки C++
 #include <vector>
+#include <iostream>
+#include <array>
+#include <sstream>
+#include <QApplication>
 #include "logger.h"
 #include "interpol.h"
 
@@ -20,6 +24,19 @@ enum NODE_SIDE
 
 template<class Type>
 using Point = std::array<Type, 5>;
+
+template<class Type>
+QString print(Point<Type> &p, const QString &name)
+{
+    QString result_string;
+    QTextStream result(&result_string);
+    result << QString("%1[%2] = ").arg(name,QString("X_PLUS")) << p[X_PLUS] << " ";
+    result << QString("%1[%2] = ").arg(name,QString("X_MINUS")) << p[X_MINUS] << " ";
+    result << QString("%1[%2] = ").arg(name,QString("Y_PLUS")) << p[Y_PLUS] << " ";
+    result << QString("%1[%2] = ").arg(name,QString("Y_MINUS")) << p[Y_MINUS] << " ";
+    return result_string;
+    //result << QString("%1[%2] = ").arg(name,QString("X_Y")).toStdString() << p[X_Y] << endl;
+}
 
 
 /*!

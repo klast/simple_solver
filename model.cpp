@@ -54,7 +54,7 @@ void Model::messageHandler(QtMsgType type, const QMessageLogContext &context, co
     }
     out << "| " << context.category <<"| " << msg << endl;
     if(type == QtCriticalMsg || type == QtInfoMsg)
-        std::cout << "| " << context.category <<"| " << msg.toStdString() << endl;
+        std::cout << "| " << context.category <<"| " << msg.toStdString().c_str() << endl;
     out.flush();
 }
 
