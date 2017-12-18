@@ -270,26 +270,31 @@ void Solver::inner_solve(double begin_time, double end_time)
                 num_inner_it++;
             };
 
-            if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
-            {
-                // TODO: сбросить результаты до начального состояния
-                dt = 0.5 * dt;
-                s_water_next = s_water_prev;
-                oil_press_next = oil_press_prev;
-                continue;
-            };
-
             if (dt < 1.0E-10)
             {
                 qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
                 QApplication::exit(-1);
             }
+
+            if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
+            {
+                // TODO: сбросить результаты до начального состояния
+                dt = 0.5 * dt;
+                s_water_next = s_water_init;
+                oil_press_next = pressure;
+                continue;
+            };
+
+
         };
         qInfo(logSolve()) << "Inner iterations num =" << num_inner_it;
 
         // TODO: обновляем необходимые данные класса Solver
         s_water_prev = s_water_next;
         oil_press_prev = oil_press_next;
+        //! Обновление для возможности сбросить результаты
+        s_water_init = s_water_next;
+        pressure = oil_press_next;
 
         time += dt;
 
@@ -506,12 +511,20 @@ void Solver::explicit_scheme_calc()
             // TODO: подумать, как работать с давлением воды (вводить его или пересчитывать через капиллярное давление и давление нефти)
             Point<double> press;
             // Давление воды в точках (i +, j) и (i -, j)
-            press[X_PLUS]  = (border[X_PLUS])  ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_prev[node_x + 1][node_y] - oil_press_prev[node_x    ][node_y]);
-            press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_prev[node_x    ][node_y] - oil_press_prev[node_x - 1][node_y]);
+            //! Изменил на то что ниже, не факт, что правильно
+            //! press[X_PLUS]  = (border[X_PLUS])  ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_prev[node_x + 1][node_y] - oil_press_prev[node_x    ][node_y]);
+            //! press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_prev[node_x    ][node_y] - oil_press_prev[node_x - 1][node_y]);
+
+            press[X_PLUS]  = middle_point(oil_press_prev, node_x, node_y, X_PLUS) - middle_point(capillary_press, node_x, node_y, X_PLUS);
+            press[X_MINUS] = middle_point(oil_press_prev, node_x, node_y, X_MINUS) - middle_point(capillary_press, node_x, node_y, X_MINUS);
 
             // Давление воды в точках (i, j +) и (i, j -)
-            press[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
-            press[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
+            //! Изменил на то что ниже, не факт, что правильно
+            //! press[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
+            //! press[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
+
+            press[Y_PLUS]  = middle_point(oil_press_prev, node_x, node_y, Y_PLUS) - middle_point(capillary_press, node_x, node_y, Y_PLUS);
+            press[Y_MINUS] = middle_point(oil_press_prev, node_x, node_y, Y_MINUS) - middle_point(capillary_press, node_x, node_y, Y_MINUS);
             qInfo(logSolve()) << print(press, "press");
 
             Point<double> potential;
@@ -556,7 +569,7 @@ void Solver::explicit_scheme_calc()
     // Если водонасыщенность превысила 1, то изменяем значение флага (необходимо для дробления шага)
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
-            if (s_water_next[node_x][node_y] > 1.0)
+            if (s_water_next[node_x][node_y] > 1.0 || s_water_next[node_x][node_y] < 0.0)
                 sw_over_1 = true;
 
     qDebug(logSolve()) << "Значение водонасыщенности найдено";
