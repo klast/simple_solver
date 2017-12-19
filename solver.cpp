@@ -48,14 +48,9 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "Коэффициент сжимаемости породы =" << rock;
     b_water = input_data["pvtw"].at(1);
     qInfo(logInit()) << "Коэффициент объемного расширения воды =" << b_water;
-    compress_water = input_data["pvtw"].at(2);
-    qInfo(logInit()) << "Коэффициент сжимаемости воды =" << compress_water;
     viscosity_water = input_data["pvtw"].at(3);
     qInfo(logInit()) << "Вязкость воды = " << viscosity_water;
     b_oil = input_data["pvdo"].at(1);
-
-    // TODO: убрать comperss_oil, оставить b_oil
-    compress_oil = b_oil;
 
     qInfo(logInit()) << "Коэффициент объемного расширения нефти =" << b_oil;
     viscosity_oil = input_data["pvdo"].at(2);
@@ -64,14 +59,14 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "Плотность нефти" << density_oil;
     density_water = input_data["density"].at(1);
     qInfo(logInit()) << "Плотность воды =" << density_water;
-    init_array(input_data["tops"], &tops);
-    qInfo(logInit()) << "Глубины ячеек =" << tops;
+    init_array(input_data["tops"], &heights);
+    qInfo(logInit()) << "Глубины ячеек =" << heights;
 
     //! Перевод АТМ в СИ
     for(auto & item: input_data["pressure"])
         item *= 1.0E+5;
-    init_array(input_data["pressure"], &pressure);
-    qInfo(logInit()) << "Давление =" << pressure;
+    init_array(input_data["pressure"], &oil_press_init);
+    qInfo(logInit()) << "Давление =" << oil_press_init;
 
     init_array(input_data["poro"], &porosity);
     qInfo(logInit()) << "Пористость =" << porosity;
@@ -97,7 +92,6 @@ void Solver::init(input_data_type &input_data)
     k_relat_oil.resize(nx);
     k_relat_water.resize(nx);
 
-    heights = tops; // TODO: убрать heights, переименовать в нужных местах в tops
     k_absol = permx;
 
     for (int node = 0; node < nx; node++)
@@ -211,6 +205,10 @@ double Solver::middle_point(vector_double_2d &arr, int i, int j, const int side)
 
 void Solver::solve()
 {
+    // Задаём текущие водонасыщенность и давление нефти через начальные значения
+    s_water = s_water_init;
+    oil_press = oil_press_init;
+
     for (step = 0; step < num_global_steps; step++)
     {
         qInfo(logSolve()) << "Starting" << step << "step";
@@ -242,15 +240,14 @@ void Solver::inner_solve(double begin_time, double end_time)
 
         double residual = 1.0; // невязка
         int num_inner_it = 0; // номер внутренней итерации
-        s_water_next = s_water_init;
-        oil_press_next = pressure;
+        s_water_next = s_water;
+        oil_press_next = oil_press;
 
         // Обновим данные по исходной матрице водонасыщенности
         fill_data();
 
         while((residual >= epsilon) && (num_inner_it < MAX_INNER_ITERATIONS))
         {
-            // TODO: проверить корректность копирования
             s_water_prev = s_water_next;
             oil_press_prev = oil_press_next;
 
@@ -278,10 +275,16 @@ void Solver::inner_solve(double begin_time, double end_time)
 
             if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
             {
-                // TODO: сбросить результаты до начального состояния
+                // Раздробить шаг по времени
                 dt = 0.5 * dt;
-                s_water_next = s_water_init;
-                oil_press_next = pressure;
+
+                // Сбросить результаты до начального состояния
+                residual = 1.0;
+                num_inner_it = 0;
+                s_water_next = s_water;
+                oil_press_next = oil_press;
+                fill_data();
+
                 continue;
             };
 
@@ -289,15 +292,11 @@ void Solver::inner_solve(double begin_time, double end_time)
         };
         qInfo(logSolve()) << "Inner iterations num =" << num_inner_it;
 
-        // TODO: обновляем необходимые данные класса Solver
-        s_water_prev = s_water_next;
-        oil_press_prev = oil_press_next;
-        //! Обновление для возможности сбросить результаты
-        s_water_init = s_water_next;
-        pressure = oil_press_next;
+        // Обновляем необходимые данные по водонасыщенности и давлению воды
+        s_water = s_water_next;
+        oil_press = oil_press_next;
 
         time += dt;
-
     };
 
 }
@@ -374,8 +373,8 @@ void Solver::implicit_scheme_calc()
             Point<bool> border;
             border[X_PLUS] = (node_x == nx - 1);
             border[X_MINUS] = (node_x == 0);
-            border[Y_MINUS] = (node_y == ny - 1);
-            border[Y_PLUS] = (node_y == 0);
+            border[Y_PLUS] = (node_y == ny - 1);
+            border[Y_MINUS] = (node_y == 0);
             qInfo(logSolve()) << print(border, "border");
 
             // Коэффициенты T в точках (i +, j), (i -, j) (i, j +) и (i, j -) (здесь и далее см. обозн. в схеме Емченко)
@@ -401,16 +400,16 @@ void Solver::implicit_scheme_calc()
             Point<double> press;
             press[X_PLUS] = (border[X_PLUS]) ? 0.0 : capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y];
             press[X_MINUS] = (border[X_MINUS]) ? 0.0 : capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y];
-            press[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ];
-            press[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1];
+            press[Y_PLUS] = (border[Y_PLUS]) ? 0.0 : capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ];
+            press[Y_MINUS] = (border[Y_MINUS]) ? 0.0 : capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1];
             qInfo(logSolve()) << print(press, "press");
 
             Point<double> grav_press;
             // Давление в следствие гравитации в точках (i +, j), (i -, j),  (i, j +) и (i, j -)
             grav_press[X_PLUS] = (border[X_PLUS]) ? 0.0 : gravity * (heights[node_x + 1][node_y] - heights[node_x    ][node_y]);
             grav_press[X_MINUS] = (border[X_MINUS]) ? 0.0 : gravity * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
-            grav_press[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : gravity * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
-            grav_press[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : gravity * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
+            grav_press[Y_PLUS] = (border[Y_PLUS]) ? 0.0 : gravity * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
+            grav_press[Y_MINUS] = (border[Y_MINUS]) ? 0.0 : gravity * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
             qInfo(logSolve()) << print(grav_press, "grav_press");
 
             // Заполнение матрицы
@@ -418,8 +417,8 @@ void Solver::implicit_scheme_calc()
             Point<double> temp;
             temp[X_PLUS] = (border[X_PLUS]) ? 0.0 : T_coeff[X_PLUS] * (lambda_oil[X_PLUS] + lambda_water[X_PLUS]);
             temp[X_MINUS] = (border[X_MINUS]) ? 0.0 : T_coeff[X_MINUS] * (lambda_oil[X_MINUS] + lambda_water[X_MINUS]);
-            temp[Y_PLUS] = (border[Y_MINUS]) ? 0.0 : T_coeff[Y_PLUS] * (lambda_oil[Y_PLUS] + lambda_water[Y_PLUS]);
-            temp[Y_MINUS] = (border[Y_PLUS]) ? 0.0 : T_coeff[Y_MINUS] * (lambda_oil[Y_MINUS] + lambda_water[Y_MINUS]);
+            temp[Y_PLUS] = (border[Y_PLUS]) ? 0.0 : T_coeff[Y_PLUS] * (lambda_oil[Y_PLUS] + lambda_water[Y_PLUS]);
+            temp[Y_MINUS] = (border[Y_MINUS]) ? 0.0 : T_coeff[Y_MINUS] * (lambda_oil[Y_MINUS] + lambda_water[Y_MINUS]);
             temp[X_Y]  = - (temp[X_PLUS] + temp[X_MINUS] + temp[Y_PLUS] + temp[Y_MINUS]);
             qInfo(logSolve()) << print(temp, "temp_matrix");
 
@@ -439,13 +438,13 @@ void Solver::implicit_scheme_calc()
 
             // Учёт скважин в правой части
             if ((node_x == inj1.ix) && (node_y == inj1.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_water * inj1.values[step] * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj1.values[step] * (dx * dy * dz);
             if ((node_x == inj2.ix) && (node_y == inj2.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_water * inj2.values[step] * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj2.values[step] * (dx * dy * dz);
             if ((node_x == prod1.ix) && (node_y == prod1.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_oil * (- prod1.values[step]) * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod1.values[step]) * (dx * dy * dz);
             if ((node_x == prod2.ix) && (node_y == prod2.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - compress_oil * (- prod2.values[step]) * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod2.values[step]) * (dx * dy * dz);
             qInfo(logSolve()) << "pres_vec[" << index[X_Y] << "] = " << pres_vec(index[X_Y]) << endl;
         };
 
@@ -488,8 +487,8 @@ void Solver::explicit_scheme_calc()
             Point<bool> border;
             border[X_PLUS] = (node_x == nx - 1);
             border[X_MINUS]  = (node_x == 0);
-            border[Y_MINUS]  = (node_y == ny - 1);
-            border[Y_PLUS]  = (node_y == 0);
+            border[Y_PLUS]  = (node_y == ny - 1);
+            border[Y_MINUS]  = (node_y == 0);
             qInfo(logSolve()) << print(border, "border");
 
             Point<double> T_coeff;
@@ -505,7 +504,7 @@ void Solver::explicit_scheme_calc()
             Point<double> lambda;
             // Коэффициенты lambda в точках (i +, j) и (i -, j)
             for(auto & side: sides)
-                lambda[side] = middle_point(k_relat_water, node_x, node_y, side) / viscosity_water / compress_water;
+                lambda[side] = middle_point(k_relat_water, node_x, node_y, side) / viscosity_water / b_water;
             qInfo(logSolve()) << print(lambda, "lambda");
 
             // TODO: подумать, как работать с давлением воды (вводить его или пересчитывать через капиллярное давление и давление нефти)
@@ -515,8 +514,8 @@ void Solver::explicit_scheme_calc()
             press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_prev[node_x    ][node_y] - oil_press_prev[node_x - 1][node_y]);
 
             // Давление воды в точках (i, j +) и (i, j -)
-            press[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
-            press[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
+            press[Y_PLUS]  = (border[Y_PLUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
+            press[Y_MINUS] = (border[Y_MINUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
 
             qInfo(logSolve()) << print(press, "press");
 
@@ -526,8 +525,8 @@ void Solver::explicit_scheme_calc()
             potential[X_MINUS] = (border[X_MINUS]) ? 0.0 : press[X_MINUS] - gravity * density_water * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
 
             // Потенциал Phi в точках (i, j +) и (i, j -)
-            potential[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : press[Y_PLUS] - gravity * density_water * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
-            potential[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : press[Y_MINUS] - gravity * density_water * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
+            potential[Y_PLUS]  = (border[Y_PLUS]) ? 0.0 : press[Y_PLUS] - gravity * density_water * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
+            potential[Y_MINUS] = (border[Y_MINUS])  ? 0.0 : press[Y_MINUS] - gravity * density_water * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
             qInfo(logSolve()) << print(potential, "potential");
 
             // Слагаемые, полученные при разложении интеграла
@@ -542,22 +541,25 @@ void Solver::explicit_scheme_calc()
             else
             {
                 Q_ASSERT(porosity[node_x][node_y] != 0);
-                s_water_next[node_x][node_y] = dt * compress_oil / porosity[node_x][node_y] / (dx * dy * dz) * (coeff[X_PLUS] - coeff[X_MINUS] + coeff[Y_PLUS] - coeff[Y_MINUS]);
+                s_water_next[node_x][node_y] = dt * b_water / porosity[node_x][node_y] / (dx * dy * dz) * (coeff[X_PLUS] - coeff[X_MINUS] + coeff[Y_PLUS] - coeff[Y_MINUS]);
             };
             qInfo(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(node_x), QString::number(node_y)) << s_water_next[node_x][node_y] << endl;
         };
 
-    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] / (dx * dy * dz) * dt * compress_water;
-    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] / (dx * dy * dz) * dt * compress_water;
+    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] / (dx * dy * dz) * dt * b_water;
+    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] / (dx * dy * dz) * dt * b_water;
     for(int i = 0; i < nx; i++)
         for(int j = 0; j < ny; j++)
             s_water_next[i][j] = s_water_prev[i][j] + s_water_next[i][j];
+
+    // Дебажная информация
     qInfo(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj1.ix), QString::number(inj1.iy)) << s_water_next[inj1.ix][inj1.iy] << endl;
     qInfo(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj2.ix), QString::number(inj2.iy)) << s_water_next[inj2.ix][inj2.iy] << endl;
     qInfo(logSolve()) << "S WATER NEXT\n";
     for(int i = 0; i < nx; i++)
         qInfo(logSolve()) << s_water_next[i];
     qInfo(logSolve()) << "Explicit_scheme_calc end\n";
+
     sw_over_1 = false;
     // Если водонасыщенность превысила 1, то изменяем значение флага (необходимо для дробления шага)
     for (int node_x = 0; node_x < nx; node_x++)

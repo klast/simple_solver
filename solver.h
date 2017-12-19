@@ -68,16 +68,14 @@ class Solver
 private:
 
     // Постоянные параметры
-    double compress_oil; //! TODO: нужен ли?
-    double compress_water; // коэффициент сжимаемости воды [1 / атм]
     double viscosity_oil; // вязкость нефти [Па с]
     double viscosity_water; // вязкость воды [Па с]
     double density_oil; // плотность нефти [кг / м^3]
     double density_water; // плотность воды [кг / м^3]
     double gravity; // ускорение свободного падения [м / с^2]
     double rock; //! коэффициент сжимаемости породы
-    double b_water; //! коэффициент объемного расширения воды
-    double b_oil; //! коэффициент объемного расширения нефти
+    double b_water; // коэффициент объемного расширения воды []
+    double b_oil; // коэффициент объемного расширения нефти []
 
     // Параметры, зависящие от водонасыщенности s_w
     vector_double_2d k_absol; // абсолютная проницаемость [1 Д = 1 мкм^2]
@@ -85,18 +83,23 @@ private:
     vector_double_2d k_relat_water; // относительная проницаемость воды []
     vector_double_2d heights; // высоты D(x, y) [1 м]
     vector_double_2d capillary_press; // капиллярное давление [1 Па]
-    vector_double_2d s_water_init; //! начальная водонасыщенность []
+    vector_double_2d porosity; // пористость
 
-    // Искомые величины
-    // TODO: возможно, нужно отделить данные на предыдущ. и следующ. внутренних итерациях в отдельный класс InnerState
-    vector_double_2d water_press; // давление воды [1 Па]
+    // Начальные данные
+    vector_double_2d s_water_init; // начальная водонасыщенность []
+    vector_double_2d oil_press_init; // начальное распределение давления нефти [1 Па]
+
+    // Искомые величины (найденное сошедшееся решение)
+    vector_double_2d s_water; // текущая водонасыщенность
+    vector_double_2d oil_press; // текущее давление нефти [1 Па]
+
+    // Данные, полученные на внутренних итерациях
     vector_double_2d oil_press_prev; // давление нефти на n внутренней итерации [1 Па]
     vector_double_2d oil_press_next; // давление нефти на n + 1 внутренней итерации [1 Па]
-    vector_double_2d s_water_prev; // давление воды на n внутренней итерации [1 Па]
-    vector_double_2d s_water_next; // давление воды на n + 1 внутренней итерации [1 Па]
-    vector_double_2d pressure; //! давление нефти [1 Па] (является "начальным" на каждом глобальном шаге (оно обновляется))
-    vector_double_2d tops; //! глубины ячеек
-    vector_double_2d porosity; //! пористость
+    vector_double_2d s_water_prev; // водонасыщенность на n внутренней итерации [1 Па]
+    vector_double_2d s_water_next; // водонасыщенность на n + 1 внутренней итерации [1 Па]
+
+    // TODO: убрать за ненадобностью
     vector_double_2d permx; //! проницаемость по OX
     vector_double_2d permy; //! проницаемость по OY
 
