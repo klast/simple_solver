@@ -511,20 +511,13 @@ void Solver::explicit_scheme_calc()
             // TODO: подумать, как работать с давлением воды (вводить его или пересчитывать через капиллярное давление и давление нефти)
             Point<double> press;
             // Давление воды в точках (i +, j) и (i -, j)
-            //! Изменил на то что ниже, не факт, что правильно
-            //! press[X_PLUS]  = (border[X_PLUS])  ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_prev[node_x + 1][node_y] - oil_press_prev[node_x    ][node_y]);
-            //! press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_prev[node_x    ][node_y] - oil_press_prev[node_x - 1][node_y]);
-
-            press[X_PLUS]  = middle_point(oil_press_prev, node_x, node_y, X_PLUS) - middle_point(capillary_press, node_x, node_y, X_PLUS);
-            press[X_MINUS] = middle_point(oil_press_prev, node_x, node_y, X_MINUS) - middle_point(capillary_press, node_x, node_y, X_MINUS);
+            press[X_PLUS]  = (border[X_PLUS])  ? 0.0 : (capillary_press[node_x + 1][node_y] - capillary_press[node_x    ][node_y]) - (oil_press_prev[node_x + 1][node_y] - oil_press_prev[node_x    ][node_y]);
+            press[X_MINUS] = (border[X_MINUS]) ? 0.0 : (capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y]) - (oil_press_prev[node_x    ][node_y] - oil_press_prev[node_x - 1][node_y]);
 
             // Давление воды в точках (i, j +) и (i, j -)
-            //! Изменил на то что ниже, не факт, что правильно
-            //! press[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
-            //! press[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
+            press[Y_PLUS]  = (border[Y_MINUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
+            press[Y_MINUS] = (border[Y_PLUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
 
-            press[Y_PLUS]  = middle_point(oil_press_prev, node_x, node_y, Y_PLUS) - middle_point(capillary_press, node_x, node_y, Y_PLUS);
-            press[Y_MINUS] = middle_point(oil_press_prev, node_x, node_y, Y_MINUS) - middle_point(capillary_press, node_x, node_y, Y_MINUS);
             qInfo(logSolve()) << print(press, "press");
 
             Point<double> potential;
