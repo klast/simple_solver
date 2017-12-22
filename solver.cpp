@@ -4,6 +4,7 @@
 // Пользовательские библиотеки
 #include "solver.h"
 #include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Dense>
 #include <Eigen/Core>
 
 Solver::Solver()
@@ -226,6 +227,7 @@ void Solver::inner_solve(double begin_time, double end_time)
 {
     // TODO: добавить расчёт шага dt через условие Куранта
     dt = end_time - begin_time;
+    dt = dt / 1000.;
 
     // Если глобальный временной шаг меньше шага по Куранту
     if ((end_time - begin_time) < dt)
@@ -451,6 +453,7 @@ void Solver::implicit_scheme_calc()
     pres_mat.setFromTriplets(tripletList.begin(), tripletList.end());
     mat_solver.compute(pres_mat);
     mat_solver.analyzePattern(pres_mat);
+    Eigen::MatrixXd pres_mat_dense(pres_mat);
     qInfo(logSolve()) << "MATRIX\n";
     std::stringstream mat_stream;
     mat_stream << pres_mat;
@@ -462,17 +465,21 @@ void Solver::implicit_scheme_calc()
     qInfo(logSolve()) << pres_vec_std;
     // Получить вектор решений
     Eigen::VectorXd solution(nx * ny);
-    solution = mat_solver.solve(pres_vec);
+    Eigen::FullPivLU<Eigen::MatrixXd> fullpivlu(pres_mat_dense);
+    fullpivlu.setThreshold(1e-8);
+    solution = fullpivlu.solve(pres_vec);
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
-            oil_press_next[node_x][node_y] = solution(node_x * ny + node_y);
+            oil_press_next[node_x][node_y] += solution(node_x * ny + node_y);
     qInfo(logSolve()) << "OIL PRESSURE ON NEXT STEP\n";
     for(int i = 0; i < oil_press_next.size(); i++)
         qInfo(logSolve()) << oil_press_next[i];
 
     // Вывод отладочной информации
-    qDebug(logSolve()) << "Количество итераций" << mat_solver.iterations();
-    qDebug(logSolve()) << "Норма матрицы" << mat_solver.error();
+  //  qDebug(logSolve()) << "Количество итераций" << mat_solver.iterations();
+   // qDebug(logSolve()) << "Норма матрицы" << mat_solver.error();
+    double relative_error = (pres_mat_dense * solution - pres_vec).norm() / pres_vec.norm();
+    qInfo(logSolve()) << "relative error is" << relative_error;
     qInfo(logSolve()) << "implicit_scheme_calc end\n";
 }
 

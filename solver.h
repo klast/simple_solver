@@ -131,7 +131,7 @@ private:
     L_Interpol krow_inter;
     L_Interpol pcow_inter;
     
-    static const int MAX_INNER_ITERATIONS = 100; // Максимальное число внутренних итераций
+    static const int MAX_INNER_ITERATIONS = 20; // Максимальное число внутренних итераций
     const std::array<int, 4> sides { { NODE_SIDE::X_PLUS, NODE_SIDE::X_MINUS, NODE_SIDE::Y_PLUS, NODE_SIDE::Y_MINUS } };
     bool sw_over_1; // Флаг, проверяющий, стала ли насыщенность больше 1
 
