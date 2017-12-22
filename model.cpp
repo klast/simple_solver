@@ -38,22 +38,30 @@ void Model::solve()
 
 void Model::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+    bool is_debug;
+#ifdef QT_NO_DEBUG
+    is_debug = false;
+#else
+    is_debug = true;
+#endif
     QTextStream out(logFile.data());
-    if(type == QtCriticalMsg || type == QtInfoMsg)
+    if(type == QtCriticalMsg || type == QtInfoMsg || (type == QtDebugMsg && is_debug))
     {
         std::cout << QDateTime::currentDateTime().toString("dd-MM-yyyy hh:mm:ss.zzz ").toStdString();
     }
-    out << QDateTime::currentDateTime().toString("dd-MM-yyyy hh:mm:ss.zzz ");
+    if(type!= QtDebugMsg || is_debug || type == QtInfoMsg)
+        out << QDateTime::currentDateTime().toString("dd-MM-yyyy hh:mm:ss.zzz ");
     switch(type)
     {
         case QtInfoMsg:     out << "| INFO     "; break;
-        case QtDebugMsg:    out << "| DEBUG    "; break;
+        case QtDebugMsg: if(is_debug)   out << "| DEBUG    "; break;
         case QtWarningMsg:  out << "| WARNING  "; break;
         case QtCriticalMsg: out << "| CRITICAL "; break;
         case QtFatalMsg:    out << "| FATAL    "; break;
     }
-    out << "| " << context.category <<"| " << msg << endl;
-    if(type == QtCriticalMsg || type == QtInfoMsg)
+    if(type!= QtDebugMsg || is_debug || type == QtInfoMsg)
+        out << "| " << context.category <<"| " << msg << endl;
+    if(type == QtCriticalMsg || type == QtInfoMsg || (type == QtDebugMsg && is_debug))
         std::cout << "| " << context.category <<"| " << msg.toStdString().c_str() << endl;
     out.flush();
 }

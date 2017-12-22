@@ -24,13 +24,13 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "NY =" << ny;
     nz = 1;
     qInfo(logInit()) << "NZ =" << nz;
-    dx = 10;
+    dx = 10 / 50.;
     qInfo(logInit()) << "DX =" << dx;
-    dy = 10;
+    dy = 10 / 50.;
     qInfo(logInit()) << "DY =" << dy;
     dz = 1;
     qInfo(logInit()) << "DZ =" << dz;
-    num_global_steps = 3;
+    num_global_steps = 1000;
     qInfo(logInit()) << "Number of time steps" << num_global_steps;
     T = num_global_steps * 1; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
@@ -82,7 +82,7 @@ void Solver::init(input_data_type &input_data)
     gravity = 9.81;
 
     // TODO: "встроить в интерфейс"
-    epsilon = 1.0E-3;
+    epsilon = 1.0E-1;
 
     // TODO: попробовать упростить?
     capillary_press.resize(nx);
@@ -227,7 +227,6 @@ void Solver::inner_solve(double begin_time, double end_time)
 {
     // TODO: добавить расчёт шага dt через условие Куранта
     dt = end_time - begin_time;
-    dt = dt / 1000.;
 
     // Если глобальный временной шаг меньше шага по Куранту
     if ((end_time - begin_time) < dt)
@@ -246,10 +245,10 @@ void Solver::inner_solve(double begin_time, double end_time)
         oil_press_next = oil_press;
 
         // Обновим данные по исходной матрице водонасыщенности
-        fill_data();
-
+        fill_data();        
         while((residual >= epsilon) && (num_inner_it < MAX_INNER_ITERATIONS))
         {
+            qInfo(logSolve()) << "STEP" << step << "TIME" << time << "dt" << dt;
             s_water_prev = s_water_next;
             oil_press_prev = oil_press_next;
 
@@ -272,7 +271,7 @@ void Solver::inner_solve(double begin_time, double end_time)
             if (dt < 1.0E-10)
             {
                 qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
-                QApplication::exit(-1);
+                exit(-1);
             }
 
             if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
@@ -331,15 +330,15 @@ void Solver::fill_data()
             k_relat_water[node_x][node_y] = krw_inter.y(s_water_next[node_x][node_y]);
             capillary_press[node_x][node_y] = pcow_inter.y(s_water_next[node_x][node_y]);
         };
-    qInfo(logSolve()) << "K RELAT OIL";
+    qDebug(logSolve()) << "K RELAT OIL";
     for(int i = 0; i < nx; i++)
-        qInfo(logSolve()) << k_relat_oil[i];
-    qInfo(logSolve()) << "K RELAT WATER";
+        qDebug(logSolve()) << k_relat_oil[i];
+    qDebug(logSolve()) << "K RELAT WATER";
     for(int i = 0; i < nx; i++)
-        qInfo(logSolve()) << k_relat_water[i];
-    qInfo(logSolve()) << "CAPILLARY PRESS";
+        qDebug(logSolve()) << k_relat_water[i];
+    qDebug(logSolve()) << "CAPILLARY PRESS";
     for(int i = 0; i < nx; i++)
-        qInfo(logSolve()) << capillary_press[i];
+        qDebug(logSolve()) << capillary_press[i];
 }
 
 void Solver::implicit_scheme_calc()
@@ -357,7 +356,7 @@ void Solver::implicit_scheme_calc()
     for (int node_y = 0; node_y < ny; node_y++)
         for (int node_x = 0; node_x < nx; node_x++)
         {
-            std::cout << "node_x = " << node_x << " node_y = " << node_y << endl;
+            qDebug(logSolve()) << "node_x = " << node_x << " node_y = " << node_y << endl;
             // Матрица pres_mat содержит коэффициенты при давлениях p_{i, j}.
             // Самих неизвестных величин M * N штук, поэтому матрица
             // имеет размер M * N. Для облегчения работы вводятся
@@ -369,7 +368,7 @@ void Solver::implicit_scheme_calc()
             index[Y_PLUS] = node_x + (node_y + 1) * ny; // номер p_{i, j + 1} в матрице
             index[Y_MINUS] = node_x + (node_y - 1) * ny;// номер p_{i, j - 1} в матрице
 
-            qInfo(logSolve()) << print(index, "index");
+            qDebug(logSolve()) << print(index, "index");
 
             // Флаг, определяющий принадлежность элемента границе сетки
             Point<bool> border;
@@ -377,7 +376,7 @@ void Solver::implicit_scheme_calc()
             border[X_MINUS] = (node_x == 0);
             border[Y_PLUS] = (node_y == ny - 1);
             border[Y_MINUS] = (node_y == 0);
-            qInfo(logSolve()) << print(border, "border");
+            qDebug(logSolve()) << print(border, "border");
 
             // Коэффициенты T в точках (i +, j), (i -, j) (i, j +) и (i, j -) (здесь и далее см. обозн. в схеме Емченко)
             Point<double> T_coeff;
@@ -386,7 +385,7 @@ void Solver::implicit_scheme_calc()
             T_coeff[Y_PLUS] = middle_point(k_absol, node_x, node_y, Y_PLUS) * dx * dz / dy;
             T_coeff[Y_MINUS] = middle_point(k_absol, node_x, node_y, Y_MINUS) * dx * dz / dy;
 
-            qInfo(logSolve()) << print(T_coeff, "T_coeff");
+            qDebug(logSolve()) << print(T_coeff, "T_coeff");
 
             Point<double> lambda_oil, lambda_water;
             // Коэффициенты lambda_o * B в точках (i +, j), (i -, j), (i, j +) и (i, j -)
@@ -395,8 +394,8 @@ void Solver::implicit_scheme_calc()
                 lambda_oil[side] = middle_point(k_relat_oil, node_x, node_y, side) / viscosity_oil;
                 lambda_water[side] = middle_point(k_relat_water, node_x, node_y, side) / viscosity_water;
             }
-            qInfo(logSolve()) << print(lambda_oil, "lambda_oil");
-            qInfo(logSolve()) << print(lambda_water, "lambda_water");
+            qDebug(logSolve()) << print(lambda_oil, "lambda_oil");
+            qDebug(logSolve()) << print(lambda_water, "lambda_water");
 
             // Капиллярное давление в точках (i +, j), (i -, j),  (i, j +) и (i, j -)
             Point<double> press;
@@ -404,7 +403,7 @@ void Solver::implicit_scheme_calc()
             press[X_MINUS] = (border[X_MINUS]) ? 0.0 : capillary_press[node_x    ][node_y] - capillary_press[node_x - 1][node_y];
             press[Y_PLUS] = (border[Y_PLUS]) ? 0.0 : capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ];
             press[Y_MINUS] = (border[Y_MINUS]) ? 0.0 : capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1];
-            qInfo(logSolve()) << print(press, "press");
+            qDebug(logSolve()) << print(press, "press");
 
             Point<double> grav_press;
             // Давление в следствие гравитации в точках (i +, j), (i -, j),  (i, j +) и (i, j -)
@@ -412,7 +411,7 @@ void Solver::implicit_scheme_calc()
             grav_press[X_MINUS] = (border[X_MINUS]) ? 0.0 : gravity * (heights[node_x    ][node_y] - heights[node_x - 1][node_y]);
             grav_press[Y_PLUS] = (border[Y_PLUS]) ? 0.0 : gravity * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
             grav_press[Y_MINUS] = (border[Y_MINUS]) ? 0.0 : gravity * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
-            qInfo(logSolve()) << print(grav_press, "grav_press");
+            qDebug(logSolve()) << print(grav_press, "grav_press");
 
             // Заполнение матрицы
             // TODO: убрать проверки (лишние)
@@ -422,7 +421,7 @@ void Solver::implicit_scheme_calc()
             temp[Y_PLUS] = (border[Y_PLUS]) ? 0.0 : T_coeff[Y_PLUS] * (lambda_oil[Y_PLUS] + lambda_water[Y_PLUS]);
             temp[Y_MINUS] = (border[Y_MINUS]) ? 0.0 : T_coeff[Y_MINUS] * (lambda_oil[Y_MINUS] + lambda_water[Y_MINUS]);
             temp[X_Y]  = - (temp[X_PLUS] + temp[X_MINUS] + temp[Y_PLUS] + temp[Y_MINUS]);
-            qInfo(logSolve()) << print(temp, "temp_matrix");
+            qDebug(logSolve()) << print(temp, "temp_matrix");
 
             for(auto & side: sides)
                 if(temp[side] != 0.0) tripletList.push_back(Trip(index[side], index[X_Y], temp[side]));
@@ -433,7 +432,7 @@ void Solver::implicit_scheme_calc()
             temp[X_MINUS] = (border[X_MINUS])  ? 0.0 : T_coeff[X_MINUS] * (grav_press[X_MINUS] * (density_oil * lambda_oil[X_MINUS] + density_water * lambda_water[X_MINUS]) + lambda_water[X_MINUS] * press[X_MINUS]);
             temp[Y_PLUS] = (border[Y_PLUS])  ? 0.0 : T_coeff[Y_PLUS] * (grav_press[Y_PLUS] * (density_oil * lambda_oil[Y_PLUS] + density_water * lambda_water[Y_PLUS]) + lambda_water[Y_PLUS] * press[Y_PLUS]);
             temp[Y_MINUS] = (border[Y_MINUS])    ? 0.0 : T_coeff[Y_MINUS] * (grav_press[Y_MINUS] * (density_oil * lambda_oil[Y_MINUS] + density_water * lambda_water[Y_MINUS]) + lambda_water[Y_MINUS] * press[Y_MINUS]);
-            qInfo(logSolve()) << print(temp, "temp_rhs");
+            qDebug(logSolve()) << print(temp, "temp_rhs");
 
             pres_vec(index[X_Y]) = - temp[X_PLUS] + temp[X_MINUS] - temp[Y_PLUS] + temp[Y_MINUS];
 
@@ -447,56 +446,59 @@ void Solver::implicit_scheme_calc()
                 pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod1.values[step]) * (dx * dy * dz);
             if ((node_x == prod2.ix) && (node_y == prod2.iy))
                 pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod2.values[step]) * (dx * dy * dz);
-            qInfo(logSolve()) << "pres_vec[" << index[X_Y] << "] = " << pres_vec(index[X_Y]) << endl;
+            qDebug(logSolve()) << "pres_vec[" << index[X_Y] << "] = " << pres_vec(index[X_Y]) << endl;
         };
 
     pres_mat.setFromTriplets(tripletList.begin(), tripletList.end());
     mat_solver.compute(pres_mat);
     mat_solver.analyzePattern(pres_mat);
     Eigen::MatrixXd pres_mat_dense(pres_mat);
-    qInfo(logSolve()) << "MATRIX\n";
+    qDebug(logSolve()) << "MATRIX\n";
     std::stringstream mat_stream;
     mat_stream << pres_mat;
     QStringList mat_string = QString::fromStdString(mat_stream.str()).split('\n');
     for(auto & item: mat_string)
-        qInfo(logSolve()) << item;
+        qDebug(logSolve()) << item;
     std::vector<double> pres_vec_std(pres_vec.data(), pres_vec.data() + pres_vec.rows() * pres_vec.cols());
-    qInfo(logSolve()) << "RHS\n";
-    qInfo(logSolve()) << pres_vec_std;
+    qDebug(logSolve()) << "RHS\n";
+    qDebug(logSolve()) << pres_vec_std;
     // Получить вектор решений
     Eigen::VectorXd solution(nx * ny);
     Eigen::FullPivLU<Eigen::MatrixXd> fullpivlu(pres_mat_dense);
     fullpivlu.setThreshold(1e-8);
     solution = fullpivlu.solve(pres_vec);
+    std::vector<double> solution_std(solution.data(), solution.data() + solution.rows() * solution.cols());
+    qDebug(logSolve()) << "DELTA PRESSURE\n";
+    qDebug(logSolve()) << solution_std;
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
             oil_press_next[node_x][node_y] += solution(node_x * ny + node_y);
-    qInfo(logSolve()) << "OIL PRESSURE ON NEXT STEP\n";
+    qDebug(logSolve()) << "OIL PRESSURE ON NEXT STEP\n";
     for(int i = 0; i < oil_press_next.size(); i++)
-        qInfo(logSolve()) << oil_press_next[i];
+        qDebug(logSolve()) << oil_press_next[i];
 
     // Вывод отладочной информации
   //  qDebug(logSolve()) << "Количество итераций" << mat_solver.iterations();
    // qDebug(logSolve()) << "Норма матрицы" << mat_solver.error();
     double relative_error = (pres_mat_dense * solution - pres_vec).norm() / pres_vec.norm();
-    qInfo(logSolve()) << "relative error is" << relative_error;
-    qInfo(logSolve()) << "implicit_scheme_calc end\n";
+    qDebug(logSolve()) << "RELATIVE SOLUTION ERROR IS" << relative_error;
+    qDebug(logSolve()) << "implicit_scheme_calc end\n";
 }
 
 void Solver::explicit_scheme_calc()
 {
-    qInfo(logSolve()) << "Explicit_scheme_calc begin\n";
+    qDebug(logSolve()) << "Explicit_scheme_calc begin\n";
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
         {
-            qInfo(logSolve()) << "node_x = " << node_x << " node_y = " << node_y << endl;
+            qDebug(logSolve()) << "node_x = " << node_x << " node_y = " << node_y << endl;
             // Флаг, определяющий принадлежность элемента границе сетки
             Point<bool> border;
             border[X_PLUS] = (node_x == nx - 1);
             border[X_MINUS]  = (node_x == 0);
             border[Y_PLUS]  = (node_y == ny - 1);
             border[Y_MINUS]  = (node_y == 0);
-            qInfo(logSolve()) << print(border, "border");
+            qDebug(logSolve()) << print(border, "border");
 
             Point<double> T_coeff;
             // Коэффициенты T в точках (i +, j) и (i -, j) (здесь и далее см. обозн. в схеме Емченко)
@@ -506,13 +508,13 @@ void Solver::explicit_scheme_calc()
             // Коэффициенты T в точках (i, j +) и (i, j -)
             T_coeff[Y_PLUS]  = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_PLUS);
             T_coeff[Y_MINUS] = dx * dz / dy * middle_point(k_absol, node_x, node_y, Y_MINUS);
-            qInfo(logSolve()) << print(T_coeff, "T_coeff");
+            qDebug(logSolve()) << print(T_coeff, "T_coeff");
 
             Point<double> lambda;
             // Коэффициенты lambda в точках (i +, j) и (i -, j)
             for(auto & side: sides)
                 lambda[side] = middle_point(k_relat_water, node_x, node_y, side) / viscosity_water / b_water;
-            qInfo(logSolve()) << print(lambda, "lambda");
+            qDebug(logSolve()) << print(lambda, "lambda");
 
             // TODO: подумать, как работать с давлением воды (вводить его или пересчитывать через капиллярное давление и давление нефти)
             Point<double> press;
@@ -524,7 +526,7 @@ void Solver::explicit_scheme_calc()
             press[Y_PLUS]  = (border[Y_PLUS]) ? 0.0 : (capillary_press[node_x][node_y + 1] - capillary_press[node_x][node_y    ]) - (oil_press_prev[node_x][node_y + 1] - oil_press_prev[node_x][node_y    ]);
             press[Y_MINUS] = (border[Y_MINUS])  ? 0.0 : (capillary_press[node_x][node_y    ] - capillary_press[node_x][node_y - 1]) - (oil_press_prev[node_x][node_y    ] - oil_press_prev[node_x][node_y - 1]);
 
-            qInfo(logSolve()) << print(press, "press");
+            qDebug(logSolve()) << print(press, "press");
 
             Point<double> potential;
             // Потенциал Phi в точках (i +, j) и (i -, j)
@@ -534,23 +536,23 @@ void Solver::explicit_scheme_calc()
             // Потенциал Phi в точках (i, j +) и (i, j -)
             potential[Y_PLUS]  = (border[Y_PLUS]) ? 0.0 : press[Y_PLUS] - gravity * density_water * (heights[node_x][node_y + 1] - heights[node_x][node_y    ]);
             potential[Y_MINUS] = (border[Y_MINUS])  ? 0.0 : press[Y_MINUS] - gravity * density_water * (heights[node_x][node_y    ] - heights[node_x][node_y - 1]);
-            qInfo(logSolve()) << print(potential, "potential");
+            qDebug(logSolve()) << print(potential, "potential");
 
             // Слагаемые, полученные при разложении интеграла
             Point<double> coeff;
             for(auto & side: sides)
                 coeff[side] = T_coeff[side] * lambda[side] * potential[side];
-            qInfo(logSolve()) << print(coeff, "coeff");
+            qDebug(logSolve()) << print(coeff, "coeff");
 
             // Рассчитываем водонасыщенность s_w на шаге t_{n + 1}    
-            if(border[X_PLUS] || border[X_MINUS] || border[Y_PLUS] || border[Y_MINUS])
-                s_water_next[node_x][node_y] = 0;
-            else
+        //    if(border[X_PLUS] || border[X_MINUS] || border[Y_PLUS] || border[Y_MINUS])
+          //      s_water_next[node_x][node_y] = 0;
+            //else
             {
                 Q_ASSERT(porosity[node_x][node_y] != 0);
                 s_water_next[node_x][node_y] = dt * b_water / porosity[node_x][node_y] / (dx * dy * dz) * (coeff[X_PLUS] - coeff[X_MINUS] + coeff[Y_PLUS] - coeff[Y_MINUS]);
             };
-            qInfo(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(node_x), QString::number(node_y)) << s_water_next[node_x][node_y] << endl;
+            qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(node_x), QString::number(node_y)) << s_water_next[node_x][node_y] << endl;
         };
 
     s_water_next[inj1.ix][inj1.iy] += inj1.values[step] / (dx * dy * dz) * dt * b_water;
@@ -560,12 +562,12 @@ void Solver::explicit_scheme_calc()
             s_water_next[i][j] = s_water_prev[i][j] + s_water_next[i][j];
 
     // Дебажная информация
-    qInfo(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj1.ix), QString::number(inj1.iy)) << s_water_next[inj1.ix][inj1.iy] << endl;
-    qInfo(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj2.ix), QString::number(inj2.iy)) << s_water_next[inj2.ix][inj2.iy] << endl;
-    qInfo(logSolve()) << "S WATER NEXT\n";
+    qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj1.ix), QString::number(inj1.iy)) << s_water_next[inj1.ix][inj1.iy] << endl;
+    qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj2.ix), QString::number(inj2.iy)) << s_water_next[inj2.ix][inj2.iy] << endl;
+    qDebug(logSolve()) << "S WATER NEXT\n";
     for(int i = 0; i < nx; i++)
-        qInfo(logSolve()) << s_water_next[i];
-    qInfo(logSolve()) << "Explicit_scheme_calc end\n";
+        qDebug(logSolve()) << s_water_next[i];
+    qDebug(logSolve()) << "Explicit_scheme_calc end\n";
 
     sw_over_1 = false;
     // Если водонасыщенность превысила 1, то изменяем значение флага (необходимо для дробления шага)
