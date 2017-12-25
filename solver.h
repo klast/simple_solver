@@ -114,7 +114,8 @@ private:
     // TODO: правильно "распределить" переменные
     double T; // Конечное время расчёта [1 с]
     double num_global_steps; // Число глобальных шагов
-    double epsilon; // Число epsilon (погрешность)
+    double epsilon_press; // Число epsilon (погрешность давления)
+    double epsilon_swater; // Число epsilon (погрешность водонасыщенности)
     int nx; //! Количество ячеек по оси X
     int ny; //! Количество ячеек по оси Y
     int nz; //! Количество ячеек по оси Z
@@ -154,9 +155,10 @@ public:
     void inner_solve(double begin_time, double end_time);
     /*!
      * \brief Рассчитать невязку
-     * \return Значение невязки
+     * \param
+     * \param
      */
-    double calc_residual();
+    void calc_residual(double& residual_press, double& residual_swater);
     /*!
      * \brief Рассчитать по явной схеме водонасыщенность
      */

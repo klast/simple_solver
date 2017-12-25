@@ -49,12 +49,12 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "Коэффициент сжимаемости породы =" << rock;
     b_water = input_data["pvtw"].at(1);
     qInfo(logInit()) << "Коэффициент объемного расширения воды =" << b_water;
-    viscosity_water = input_data["pvtw"].at(3);
+    viscosity_water = input_data["pvtw"].at(3) * 1.0E-3; //! СИ: перевод из [сП] в [Па / с]
     qInfo(logInit()) << "Вязкость воды = " << viscosity_water;
     b_oil = input_data["pvdo"].at(1);
 
     qInfo(logInit()) << "Коэффициент объемного расширения нефти =" << b_oil;
-    viscosity_oil = input_data["pvdo"].at(2);
+    viscosity_oil = input_data["pvdo"].at(2) * 1.0E-3; //! СИ: перевод из [сП] в [Па / с]
     qInfo(logInit()) << "Вязкость нефти =" << viscosity_oil;
     density_oil = input_data["density"].at(0);
     qInfo(logInit()) << "Плотность нефти" << density_oil;
@@ -82,7 +82,8 @@ void Solver::init(input_data_type &input_data)
     gravity = 9.81;
 
     // TODO: "встроить в интерфейс"
-    epsilon = 1.0E-1;
+    epsilon_press = 1.0E+5;
+    epsilon_swater = 5.0E-3;
 
     // TODO: попробовать упростить?
     capillary_press.resize(nx);
@@ -94,6 +95,9 @@ void Solver::init(input_data_type &input_data)
     k_relat_water.resize(nx);
 
     k_absol = permx;
+    for (int node_x = 0; node_x < nx; node_x++)
+        for (int node_y = 0; node_y < ny; node_y++)
+            k_absol[node_x][node_y] = k_absol[node_x][node_y] * 1.0E-15; //! СИ: перевод из [мД] в [м^2]
 
     for (int node = 0; node < nx; node++)
     {
@@ -136,10 +140,14 @@ void Solver::init_swof(input_data_type &input_data)
 
 void Solver::init_wells(input_data_type &input_data)
 {
-    prod1.set_location(1, 1);
-    prod2.set_location(nx - 2, ny - 2);
-    inj1.set_location(1, ny - 2);
-    inj2.set_location(nx - 2, 1);
+//    prod1.set_location(1, 1);
+//    prod2.set_location(nx - 2, ny - 2);
+//    inj1.set_location(1, ny - 2);
+//    inj2.set_location(nx - 2, 1);
+    prod1.set_location(0, 0);
+    prod2.set_location(nx - 1, ny - 1);
+    inj1.set_location(0, ny - 1);
+    inj2.set_location(nx - 1, 0);
     //! Инициализация дебитов и приемистостей
     QVector<double> wellinfo = input_data["wellinfo"];
     int wellinfo_size = wellinfo.size() / 4;
@@ -239,14 +247,15 @@ void Solver::inner_solve(double begin_time, double end_time)
         if ((end_time - time) < dt)
             dt = end_time - time;
 
-        double residual = 1.0; // невязка
+        double residual_press = 1.0E+5; // невязка по давлению
+        double residual_swater = 1.0; // невязка по водонасыщенности
         int num_inner_it = 0; // номер внутренней итерации
         s_water_next = s_water;
         oil_press_next = oil_press;
 
         // Обновим данные по исходной матрице водонасыщенности
         fill_data();        
-        while((residual >= epsilon) && (num_inner_it < MAX_INNER_ITERATIONS))
+        while((residual_press >= epsilon_press) && (residual_swater >= epsilon_swater) && (num_inner_it < MAX_INNER_ITERATIONS))
         {
             qInfo(logSolve()) << "STEP" << step << "TIME" << time << "dt" << dt;
             s_water_prev = s_water_next;
@@ -263,12 +272,12 @@ void Solver::inner_solve(double begin_time, double end_time)
                 // IMPES: неявная по давлению
                 implicit_scheme_calc();
 
-                residual = calc_residual();
+                calc_residual(residual_press, residual_swater);
 
                 num_inner_it++;
             };
 
-            if (dt < 1.0E-10)
+            if (dt < 1.0E-20)
             {
                 qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
                 exit(-1);
@@ -276,11 +285,14 @@ void Solver::inner_solve(double begin_time, double end_time)
 
             if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
             {
+                qInfo(logSolve()) << "sw_over_1 = " << sw_over_1;
+
                 // Раздробить шаг по времени
                 dt = 0.5 * dt;
 
                 // Сбросить результаты до начального состояния
-                residual = 1.0;
+                residual_press = 1.0E+5;
+                residual_swater = 1.0;
                 num_inner_it = 0;
                 s_water_next = s_water;
                 oil_press_next = oil_press;
@@ -297,12 +309,16 @@ void Solver::inner_solve(double begin_time, double end_time)
         s_water = s_water_next;
         oil_press = oil_press_next;
 
+
+        qInfo(logSolve()) << "s_water = " << s_water;
+        qInfo(logSolve()) << "oil_press = " << oil_press;
+
         time += dt;
     };
 
 }
 
-double Solver::calc_residual()
+void Solver::calc_residual(double& residual_press, double& residual_swater)
 {
     double norm_sw = 0.0;
     double norm_po = 0.0;
@@ -313,12 +329,11 @@ double Solver::calc_residual()
             norm_po += pow(oil_press_prev[node_x][node_y] - oil_press_next[node_x][node_y], 2.0);
         };
 
-    norm_sw = sqrt(norm_sw);
-    norm_po = sqrt(norm_po);
+    residual_swater = sqrt(norm_sw);
+    residual_press = sqrt(norm_po);
 
-    qInfo(logSolve()) << "SWAT NORM =" << norm_sw << ", OIL PRESSURE NORM =" << norm_po;
+    qInfo(logSolve()) << "SWAT NORM =" << residual_swater << ", OIL PRESSURE NORM =" << residual_press;
 
-    return std::max(norm_sw, norm_po);
 }
 
 void Solver::fill_data()
@@ -328,7 +343,7 @@ void Solver::fill_data()
         for (int node_y = 0; node_y < ny; node_y++) {
             k_relat_oil[node_x][node_y] = krow_inter.y(s_water_next[node_x][node_y]);
             k_relat_water[node_x][node_y] = krw_inter.y(s_water_next[node_x][node_y]);
-            capillary_press[node_x][node_y] = pcow_inter.y(s_water_next[node_x][node_y]);
+            capillary_press[node_x][node_y] = pcow_inter.y(s_water_next[node_x][node_y]) * 1.0E+5; //! СИ: перевод из [атм] в [Па];
         };
     qDebug(logSolve()) << "K RELAT OIL";
     for(int i = 0; i < nx; i++)
