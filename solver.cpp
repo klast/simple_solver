@@ -24,15 +24,15 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "NY =" << ny;
     nz = 1;
     qInfo(logInit()) << "NZ =" << nz;
-    dx = 10 / 50.;
+    dx = 10;
     qInfo(logInit()) << "DX =" << dx;
-    dy = 10 / 50.;
+    dy = 10;
     qInfo(logInit()) << "DY =" << dy;
     dz = 1;
     qInfo(logInit()) << "DZ =" << dz;
     num_global_steps = 1000;
     qInfo(logInit()) << "Number of time steps" << num_global_steps;
-    T = num_global_steps * 1; //! типо 1 день, надо ли вообще так
+    T = num_global_steps * 24 * 60 * 60; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
     {
         //! SWAT == 0.4, инициализация
@@ -82,7 +82,7 @@ void Solver::init(input_data_type &input_data)
     gravity = 9.81;
 
     // TODO: "встроить в интерфейс"
-    epsilon_press = 1.0E+5;
+    epsilon_press = 1.0E+3;
     epsilon_swater = 5.0E-3;
 
     // TODO: попробовать упростить?
@@ -156,10 +156,10 @@ void Solver::init_wells(input_data_type &input_data)
         int index = i * 4;
         //! Перевод в СИ
         const double m3_sut = 24 * 3600;
-        prod1.values.push_back(wellinfo[index] / m3_sut);
-        prod2.values.push_back(wellinfo[index + 1] / m3_sut);
-        inj1.values.push_back(wellinfo[index + 2] / m3_sut);
-        inj2.values.push_back(wellinfo[index + 3] / m3_sut);
+        prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
+        prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
+        inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
+        inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
     }
     qInfo(logInit()) << "prod1 (" << prod1.ix + 1 << "," << prod1.iy + 1 << ")";
     qInfo(logInit()) << "prod2 (" << prod2.ix + 1 << "," << prod2.iy + 1 << ")";
@@ -234,7 +234,8 @@ void Solver::solve()
 void Solver::inner_solve(double begin_time, double end_time)
 {
     // TODO: добавить расчёт шага dt через условие Куранта
-    dt = end_time - begin_time;
+    //dt = end_time - begin_time;
+    dt = 1;
 
     // Если глобальный временной шаг меньше шага по Куранту
     if ((end_time - begin_time) < dt)
@@ -254,7 +255,7 @@ void Solver::inner_solve(double begin_time, double end_time)
         oil_press_next = oil_press;
 
         // Обновим данные по исходной матрице водонасыщенности
-        fill_data();        
+        fill_data();
         while((residual_press >= epsilon_press) && (residual_swater >= epsilon_swater) && (num_inner_it < MAX_INNER_ITERATIONS))
         {
             qInfo(logSolve()) << "STEP" << step << "TIME" << time << "dt" << dt;
@@ -459,13 +460,13 @@ void Solver::implicit_scheme_calc()
 
             // Учёт скважин в правой части
             if ((node_x == inj1.ix) && (node_y == inj1.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj1.values[step] * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj1.values[step];
             if ((node_x == inj2.ix) && (node_y == inj2.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj2.values[step] * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj2.values[step];
             if ((node_x == prod1.ix) && (node_y == prod1.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod1.values[step]) * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod1.values[step]);
             if ((node_x == prod2.ix) && (node_y == prod2.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod2.values[step]) * (dx * dy * dz);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod2.values[step]);
             qDebug(logSolve()) << "pres_vec[" << index[X_Y] << "] = " << pres_vec(index[X_Y]) << endl;
         };
 
@@ -485,7 +486,7 @@ void Solver::implicit_scheme_calc()
     // Получить вектор решений
     Eigen::VectorXd solution(nx * ny);
     Eigen::FullPivLU<Eigen::MatrixXd> fullpivlu(pres_mat_dense);
-    fullpivlu.setThreshold(1e-8);
+    fullpivlu.setThreshold(1e-15);
     solution = fullpivlu.solve(pres_vec);
     std::vector<double> solution_std(solution.data(), solution.data() + solution.rows() * solution.cols());
     qDebug(logSolve()) << "DELTA PRESSURE\n";
@@ -575,8 +576,8 @@ void Solver::explicit_scheme_calc()
             qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(node_x), QString::number(node_y)) << s_water_next[node_x][node_y] << endl;
         };
 
-    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] / (dx * dy * dz) * dt * b_water;
-    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] / (dx * dy * dz) * dt * b_water;
+    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] * dt * b_water;
+    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] * dt * b_water;
     for(int i = 0; i < nx; i++)
         for(int j = 0; j < ny; j++)
             s_water_next[i][j] = s_water_prev[i][j] + s_water_next[i][j];
