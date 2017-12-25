@@ -7,6 +7,7 @@
 #include <array>
 #include <sstream>
 #include <QApplication>
+#include <QFile>
 #include "logger.h"
 #include "interpol.h"
 

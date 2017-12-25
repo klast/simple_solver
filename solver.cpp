@@ -236,6 +236,26 @@ void Solver::solve()
         // TODO: обновляем необходимые данные в классе Solver
 
     };
+    QFile swat_file("swat.csv");
+    QFile pres_file("pres.csv");
+    swat_file.open(QIODevice::WriteOnly | QIODevice::Text);
+    pres_file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream sw(&swat_file);
+    QTextStream pr(&pres_file);
+    for(int i = 0; i < oil_press_next.size(); i++)
+    {
+        for(int j = 0; j < oil_press_next.size(); j++)
+        {
+            sw << s_water[i][j] << ";";
+            pr << oil_press[i][j] << ";";
+        }
+        sw << "\n";
+        pr << "\n";
+    }
+    sw.flush();
+    pr.flush();
+    swat_file.close();
+    pres_file.close();
     //! TODO(Вова): объединить h5 с каждого шага в один, или сразу всё в один h5 записывать
 
 }
@@ -275,6 +295,7 @@ void Solver::inner_solve(double begin_time, double end_time)
             {
                 //qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
                 //exit(-1);
+                time = end_time;
                 break;
             }
             // IMPES: явная по водонасыщенности
@@ -291,7 +312,7 @@ void Solver::inner_solve(double begin_time, double end_time)
                 calc_residual(residual_press, residual_swater);
 
                 num_inner_it++;
-            };         
+            };
 
             if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
             {
@@ -321,16 +342,15 @@ void Solver::inner_solve(double begin_time, double end_time)
         if (oil_press[0][0] < 20.0) prod_con1 = 0.0;
         if (oil_press[nx - 1][ny - 1] < 20.0) prod_con2 = 0.0;
 
-        qInfo(logSolve()) << "S_WATER";
-        for(int i = 0; i < s_water.size(); i++ )
-            qInfo(logSolve()) << s_water[i];
-
-        qInfo(logSolve()) << "OIL_PRESS";
-        for(int i = 0; i < oil_press.size(); i++ )
-            qInfo(logSolve()) << oil_press[i];
-
         time += dt;
     };
+    qInfo(logSolve()) << "S_WATER";
+    for(int i = 0; i < s_water.size(); i++ )
+        qInfo(logSolve()) << s_water[i];
+
+    qInfo(logSolve()) << "OIL_PRESS";
+    for(int i = 0; i < oil_press.size(); i++ )
+        qInfo(logSolve()) << oil_press[i];
 
 }
 
@@ -593,8 +613,8 @@ void Solver::explicit_scheme_calc()
             s_water_next[i][j] = s_water_prev[i][j] + s_water_next[i][j];
 
     // Дебажная информация
-    qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj1.ix), QString::number(inj1.iy)) << s_water_next[inj1.ix][inj1.iy] << endl;
-    qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj2.ix), QString::number(inj2.iy)) << s_water_next[inj2.ix][inj2.iy] << endl;
+    qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj1.ix), QString::number(inj1.iy)) << s_water_next[inj1.ix][inj1.iy];
+    qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(inj2.ix), QString::number(inj2.iy)) << s_water_next[inj2.ix][inj2.iy];
     qDebug(logSolve()) << "S WATER NEXT\n";
     for(int i = 0; i < nx; i++)
         qDebug(logSolve()) << s_water_next[i];
