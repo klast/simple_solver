@@ -31,9 +31,9 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "DY =" << dy;
     dz = 1;
     qInfo(logInit()) << "DZ =" << dz;
-    num_global_steps = 10;
+    num_global_steps = 20;
     qInfo(logInit()) << "Number of time steps" << num_global_steps;
-    T = num_global_steps * 5; //! типо 1 день, надо ли вообще так
+    T = num_global_steps * 24; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
     {
         //! SWAT == 0.4, инициализация
@@ -161,13 +161,13 @@ void Solver::init_wells(input_data_type &input_data)
         prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
         inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
         inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));*/
-        prod1.values.push_back(75 / (m3_sut * dx * dy * dz) );
-        prod2.values.push_back(75 / (m3_sut * dx * dy * dz));
-        inj1.values.push_back(75 / (m3_sut * dx * dy * dz));
-        inj2.values.push_back(75 / (m3_sut * dx * dy * dz));
+        prod1.values.push_back(25 / (m3_sut * dx * dy * dz) );
+        prod2.values.push_back(25 / (m3_sut * dx * dy * dz));
+        inj1.values.push_back(25 / (m3_sut * dx * dy * dz));
+        inj2.values.push_back(25 / (m3_sut * dx * dy * dz));
 
-        prod_con1 = 75 / (m3_sut * dx * dy * dz);
-        prod_con2 = 75 / (m3_sut * dx * dy * dz);
+        prod_con1 = 25 / (m3_sut * dx * dy * dz);
+        prod_con2 = 25 / (m3_sut * dx * dy * dz);
 
     }
     qInfo(logInit()) << "prod1 (" << prod1.ix + 1 << "," << prod1.iy + 1 << ")";
