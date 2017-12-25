@@ -39,10 +39,11 @@ void Model::solve()
 void Model::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     bool is_debug;
-#ifdef QT_NO_DEBUG
-    is_debug = false;
-#else
+//#define QT_DEBUG_PRINT
+#ifdef QT_DEBUG_PRINT
     is_debug = true;
+#else
+    is_debug = false;
 #endif
     QTextStream out(logFile.data());
     if(type == QtCriticalMsg || type == QtInfoMsg || (type == QtDebugMsg && is_debug))

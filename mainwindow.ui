@@ -202,6 +202,19 @@
        <string>Выбрать файл</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="push_test_Button">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>10</y>
+        <width>211</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Считать тестовую модель 5*5</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="pressure_animation">
      <attribute name="title">

@@ -28,6 +28,7 @@ public:
 private slots:
     void handle_Button();
     void handle_start_Button();
+    void handle_start_test_Button();
 
 private:
     Ui::MainWindow *ui;

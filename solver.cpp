@@ -310,8 +310,13 @@ void Solver::inner_solve(double begin_time, double end_time)
         oil_press = oil_press_next;
 
 
-        qInfo(logSolve()) << "s_water = " << s_water;
-        qInfo(logSolve()) << "oil_press = " << oil_press;
+        qInfo(logSolve()) << "S_WATER";
+        for(int i = 0; i < s_water.size(); i++ )
+            qInfo(logSolve()) << s_water[i];
+
+        qInfo(logSolve()) << "OIL_PRESS";
+        for(int i = 0; i < oil_press.size(); i++ )
+            qInfo(logSolve()) << oil_press[i];
 
         time += dt;
     };
