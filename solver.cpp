@@ -5,6 +5,7 @@
 #include "solver.h"
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Dense>
+//#include <Eigen/LU>
 #include <Eigen/Core>
 
 Solver::Solver()
@@ -156,10 +157,18 @@ void Solver::init_wells(input_data_type &input_data)
         int index = i * 4;
         //! Перевод в СИ
         const double m3_sut = 24 * 3600;
-        prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
+       /* prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
         prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
         inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
-        inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
+        inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));*/
+        prod1.values.push_back(10 / (m3_sut * dx * dy * dz) );
+        prod2.values.push_back(10 / (m3_sut * dx * dy * dz));
+        inj1.values.push_back(10 / (m3_sut * dx * dy * dz));
+        inj2.values.push_back(10 / (m3_sut * dx * dy * dz));
+
+        prod_con1 = 10 / (m3_sut * dx * dy * dz);
+        prod_con2 = 10 / (m3_sut * dx * dy * dz);
+
     }
     qInfo(logInit()) << "prod1 (" << prod1.ix + 1 << "," << prod1.iy + 1 << ")";
     qInfo(logInit()) << "prod2 (" << prod2.ix + 1 << "," << prod2.iy + 1 << ")";
@@ -234,8 +243,8 @@ void Solver::solve()
 void Solver::inner_solve(double begin_time, double end_time)
 {
     // TODO: добавить расчёт шага dt через условие Куранта
-    //dt = end_time - begin_time;
-    dt = 1;
+    dt = end_time - begin_time;
+    //dt = 1;
 
     // Если глобальный временной шаг меньше шага по Куранту
     if ((end_time - begin_time) < dt)
@@ -248,7 +257,7 @@ void Solver::inner_solve(double begin_time, double end_time)
         if ((end_time - time) < dt)
             dt = end_time - time;
 
-        double residual_press = 1.0E+5; // невязка по давлению
+        double residual_press = 1.0E+20; // невязка по давлению
         double residual_swater = 1.0; // невязка по водонасыщенности
         int num_inner_it = 0; // номер внутренней итерации
         s_water_next = s_water;
@@ -256,7 +265,7 @@ void Solver::inner_solve(double begin_time, double end_time)
 
         // Обновим данные по исходной матрице водонасыщенности
         fill_data();
-        while((residual_press >= epsilon_press) && (residual_swater >= epsilon_swater) && (num_inner_it < MAX_INNER_ITERATIONS))
+        while(((residual_press >= epsilon_press) || (residual_swater >= epsilon_swater)) && (num_inner_it < MAX_INNER_ITERATIONS))
         {
             qInfo(logSolve()) << "STEP" << step << "TIME" << time << "dt" << dt;
             s_water_prev = s_water_next;
@@ -278,10 +287,11 @@ void Solver::inner_solve(double begin_time, double end_time)
                 num_inner_it++;
             };
 
-            if (dt < 1.0E-20)
+            if (dt < 1.0E-2)
             {
-                qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
-                exit(-1);
+                //qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
+                //exit(-1);
+                break;
             }
 
             if (sw_over_1 || (num_inner_it == MAX_INNER_ITERATIONS))
@@ -292,7 +302,7 @@ void Solver::inner_solve(double begin_time, double end_time)
                 dt = 0.5 * dt;
 
                 // Сбросить результаты до начального состояния
-                residual_press = 1.0E+5;
+                residual_press = 1.0E+20;
                 residual_swater = 1.0;
                 num_inner_it = 0;
                 s_water_next = s_water;
@@ -310,6 +320,8 @@ void Solver::inner_solve(double begin_time, double end_time)
         s_water = s_water_next;
         oil_press = oil_press_next;
 
+        if (oil_press[0][0] < 20.0E+5) prod_con1 = 0.0;
+        if (oil_press[nx - 1][ny - 1] < 20.0E+5) prod_con2 = 0.0;
 
         qInfo(logSolve()) << "S_WATER";
         for(int i = 0; i < s_water.size(); i++ )
@@ -464,9 +476,9 @@ void Solver::implicit_scheme_calc()
             if ((node_x == inj2.ix) && (node_y == inj2.iy))
                 pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj2.values[step];
             if ((node_x == prod1.ix) && (node_y == prod1.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod1.values[step]);
-            if ((node_x == prod2.ix) && (node_y == prod2.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod2.values[step]);
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod_con1);
+            if ((node_x == prod2.ix) && (node_y == prod2.iy) && (pres_vec(index[X_Y]) >= 20.0E+5))
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_oil * (- prod_con2);
             qDebug(logSolve()) << "pres_vec[" << index[X_Y] << "] = " << pres_vec(index[X_Y]) << endl;
         };
 
@@ -486,7 +498,7 @@ void Solver::implicit_scheme_calc()
     // Получить вектор решений
     Eigen::VectorXd solution(nx * ny);
     Eigen::FullPivLU<Eigen::MatrixXd> fullpivlu(pres_mat_dense);
-    fullpivlu.setThreshold(1e-15);
+    fullpivlu.setThreshold(1e-8);
     solution = fullpivlu.solve(pres_vec);
     std::vector<double> solution_std(solution.data(), solution.data() + solution.rows() * solution.cols());
     qDebug(logSolve()) << "DELTA PRESSURE\n";
