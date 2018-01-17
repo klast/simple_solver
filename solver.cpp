@@ -5,6 +5,7 @@
 #include "solver.h"
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Dense>
+#include <unsupported/Eigen/SparseExtra>
 //#include <Eigen/LU>
 #include <Eigen/Core>
 
@@ -31,7 +32,7 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "DY =" << dy;
     dz = 1;
     qInfo(logInit()) << "DZ =" << dz;
-    num_global_steps = 20;
+    num_global_steps = 5;
     qInfo(logInit()) << "Number of time steps" << num_global_steps;
     T = num_global_steps * 24; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
@@ -157,10 +158,10 @@ void Solver::init_wells(input_data_type &input_data)
         int index = i * 4;
         //! Перевод в СИ
         const double m3_sut = 24 ;
-       /* prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
-        prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
-        inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
-        inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));*/
+        //prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
+       // prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
+        //inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
+        //inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
         prod1.values.push_back(25 / (m3_sut * dx * dy * dz) );
         prod2.values.push_back(25 / (m3_sut * dx * dy * dz));
         inj1.values.push_back(25 / (m3_sut * dx * dy * dz));
@@ -231,13 +232,15 @@ void Solver::solve()
     {
         qInfo(logSolve()) << "Starting" << step << "step";
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
+        prod_con1 = prod1.values[step];
+        prod_con2 = prod2.values[step];
         inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
         //! TODO(Вова): сохраняем полученное решение в h5
         // TODO: обновляем необходимые данные в классе Solver
 
     };
-    QFile swat_file("swat.csv");
-    QFile pres_file("pres.csv");
+    QFile swat_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/swat.csv");
+    QFile pres_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/pres.csv");
     swat_file.open(QIODevice::WriteOnly | QIODevice::Text);
     pres_file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream sw(&swat_file);
@@ -503,6 +506,8 @@ void Solver::implicit_scheme_calc()
     pres_mat.setFromTriplets(tripletList.begin(), tripletList.end());
     mat_solver.compute(pres_mat);
     mat_solver.analyzePattern(pres_mat);
+    Eigen::saveMarket(pres_mat, "C:/users/spelevova/documents/simple_solver/tests/model4_test/mat.mtx");
+    Eigen::saveMarketVector(pres_vec, "C:/users/spelevova/documents/simple_solver/tests/model4_test/rhs.mtx");
     Eigen::MatrixXd pres_mat_dense(pres_mat);
     qDebug(logSolve()) << "MATRIX\n";
     std::stringstream mat_stream;
@@ -513,11 +518,13 @@ void Solver::implicit_scheme_calc()
     std::vector<double> pres_vec_std(pres_vec.data(), pres_vec.data() + pres_vec.rows() * pres_vec.cols());
     qDebug(logSolve()) << "RHS\n";
     qDebug(logSolve()) << pres_vec_std;
+    system(qPrintable("C:/users/spelevova/documents/simple_solver/console.bat"));
     // Получить вектор решений
     Eigen::VectorXd solution(nx * ny);
+    Eigen::loadMarketVector(solution, "C:/users/spelevova/documents/simple_solver/tests/model4_test/test.mtx");
     Eigen::FullPivLU<Eigen::MatrixXd> fullpivlu(pres_mat_dense);
     fullpivlu.setThreshold(1e-8);
-    solution = fullpivlu.solve(pres_vec);
+    //solution = fullpivlu.solve(pres_vec);
     std::vector<double> solution_std(solution.data(), solution.data() + solution.rows() * solution.cols());
     qDebug(logSolve()) << "DELTA PRESSURE\n";
     qDebug(logSolve()) << solution_std;

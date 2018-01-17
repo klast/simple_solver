@@ -98,12 +98,12 @@ void MainWindow::handle_start_Button()
 
 void MainWindow::handle_start_test_Button()
 {
-    filenames[filetypes::init_well] = "C:/projects/simple_solver/tests/model4_test/init4.txt";
-    filenames[filetypes::SCAL] = "C:/projects/simple_solver/tests/model4_test/MODEL_SCAL.INC";
-    filenames[filetypes::PVT] = "C:/projects/simple_solver/tests/model4_test/MODEL_PVT.INC";
-    filenames[filetypes::GRID] = "C:/projects/simple_solver/tests/model4_test/MODEL_GRID.INC";
-    filenames[filetypes::GPRO] = "C:/projects/simple_solver/tests/model4_test/MODEL_INIT.INC";
-    filenames[filetypes::INIT] = "C:/projects/simple_solver/tests/model4_test/MODEL_GPRO.INC";
+    filenames[filetypes::init_well] = "C:/users/spelevova/documents/simple_solver/tests/model4_test/init4.txt";
+    filenames[filetypes::SCAL] = "C:/users/spelevova/documents/simple_solver/tests/model4_test/MODEL_SCAL.INC";
+    filenames[filetypes::PVT] = "C:/users/spelevova/documents/simple_solver/tests/model4_test/MODEL_PVT.INC";
+    filenames[filetypes::GRID] = "C:/users/spelevova/documents/simple_solver/tests/model4_test/MODEL_GRID.INC";
+    filenames[filetypes::GPRO] = "C:/users/spelevova/documents/simple_solver/tests/model4_test/MODEL_INIT.INC";
+    filenames[filetypes::INIT] = "C:/users/spelevova/documents/simple_solver/tests/model4_test/MODEL_GPRO.INC";
     model.reader.set_file(filetypes::init_well, filenames[filetypes::init_well]);
     model.reader.set_file(filetypes::SCAL, filenames[filetypes::SCAL]);
     model.reader.set_file(filetypes::PVT, filenames[filetypes::PVT]);

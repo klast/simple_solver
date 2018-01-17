@@ -43,3 +43,4 @@ FORMS += \
         mainwindow.ui
 
 INCLUDEPATH += $$PWD/eigen
+INCLUDEPATH += $$PWD/unsupported
