@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class Drawer :
-    def drawField(widget, field) :
+    def drawField(widget, field, tmin, tmax) :
 
         # fig = self.widget_MapOfPressure.figure
         # fig.clear()
@@ -45,7 +45,7 @@ class Drawer :
         X, Y = np.meshgrid(grid_y, grid_x)
 
         plot = fig.add_subplot(111)
-        colors = plot.pcolor(X, Y, field, cmap=plt.cm.RdBu, vmin=0, vmax=0.25)
+        colors = plot.pcolor(X, Y, field, cmap=plt.cm.RdBu, vmin=np.min(field), vmax=np.max(field))
         colorbar = fig.colorbar(colors)
 
         widget.canvas.draw()

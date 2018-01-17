@@ -21,7 +21,7 @@ Well::Well()
 
 void Solver::init(input_data_type &input_data)
 {
-    hdf5_step = 0;
+    hdf5_step = 1;
     qInfo(logInit()) << "Initialization begin";
     qInfo(logInit()) << "NX =" << nx;
     qInfo(logInit()) << "NY =" << ny;
@@ -160,10 +160,10 @@ void Solver::init_wells(input_data_type &input_data)
     {
         int index = i * 4;
         //! Перевод в СИ
-        const double m3_sut = 24 ;
-        //prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
+        const double m3_sut = 24;
+       // prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
        // prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
-        //inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
+       // inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
         //inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
         prod1.values.push_back(25 / (m3_sut * dx * dy * dz) );
         prod2.values.push_back(25 / (m3_sut * dx * dy * dz));
@@ -231,7 +231,17 @@ void Solver::solve()
     // Задаём текущие водонасыщенность и давление нефти через начальные значения
     s_water = s_water_init;
     oil_press = oil_press_init;
-
+    std::vector<double> s_water_hdf5(nx * ny), oil_press_hdf5(nx * ny);
+    int index_hdf5 = 0;
+    for(int i = 0; i < nx; i++)
+        for(int j = 0; j < ny; j++)
+        {
+            s_water_hdf5[index_hdf5] = s_water[i][j];
+            oil_press_hdf5[index_hdf5] = oil_press[i][j];
+            index_hdf5++;
+        }
+    hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", 0);
+    hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", 0);
     for (step = 0; step < num_global_steps; step++)
     {
         qInfo(logSolve()) << "Starting" << step << "step";
@@ -243,6 +253,7 @@ void Solver::solve()
         // TODO: обновляем необходимые данные в классе Solver
 
     };
+
     QFile swat_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/swat.csv");
     QFile pres_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/pres.csv");
     swat_file.open(QIODevice::WriteOnly | QIODevice::Text);

@@ -15,6 +15,8 @@ from ctypes import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
+import math
+import h5py
 from drawer import Drawer
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -25,6 +27,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     production_2 = []
     injection_1 = []
     injection_2 = []
+    
+    def get_pressures(self):
+        f = h5py.File("tests/model4_test/init4.h5", "r")
+        h1 = f['pressure_cube']
+        size = len([i for i in h1])
+        list_pres = []
+        for i in range(size):
+            tmp = np.array(h1[str(i)])
+            s = int(math.sqrt(tmp.shape[0]))
+            tmp = tmp.reshape((s, s))
+            list_pres.append(tmp)
+        list_pres = np.array(list_pres)
+        return list_pres
+        
+        
+    def get_saturations(self):
+        f = h5py.File("tests/model4_test/init4.h5", "r")
+        h1 = f['saturation_cube']
+        size = len([i for i in h1])
+        list_pres = []
+        for i in range(size):
+            tmp = np.array(h1[str(i)])
+            s = int(math.sqrt(tmp.shape[0]))
+            tmp = tmp.reshape((s, s))
+            list_pres.append(tmp)
+        list_pres = np.array(list_pres)
+        return list_pres
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -48,8 +77,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.filenames = ["", "", "", "", "", ""]
 
-        self.pressures = np.load('Poro1_hpgl_n12_1.npy')
-        self.saturations = self.pressures
+        self.pressures = self.get_pressures()
+        self.saturations = self.get_saturations()
+        self.presmin = 99#np.min(self.pressures)
+        self.presmax = 101#np.max(self.pressures)
+        self.satmin = np.min(self.saturations)
+        self.satmax = np.max(self.saturations)
 
         self.horizontalSlider.setMinimum(0)
         self.horizontalSlider.setMaximum(self.pressures.shape[0] - 1)
@@ -57,7 +90,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.horizontalSlider_2.setMaximum(self.pressures.shape[0] - 1)
 
         self.handle_drawGraphPVT()
-        self.handle_drawOilWellsParams()
+        self.handle_drawOilWellsParams()        
+
         
     def handle_Button(self):
         sender = self.sender()
@@ -106,12 +140,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.horizontalSlider.setValue(0)
             current_pressure = self.pressures[0, :, :]
             widget = self.widget_MapOfPressure
-            Drawer.drawField(widget, current_pressure)
+            Drawer.drawField(widget, current_pressure, self.presmin, self.presmax)
         elif sender == self.pushButton_5:
             self.horizontalSlider_2.setValue(0)
             current_saturation = self.saturations[0, :, :]
             widget = self.widget_MapOfSaturation
-            Drawer.drawField(widget, current_saturation)
+            Drawer.drawField(widget, current_saturation, self.satmin, self.satmax)
 
     def handle_drawFinal_Button(self):
         sender = self.sender()
@@ -119,12 +153,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.horizontalSlider.setValue(self.pressures.shape[0])
             current_pressure = self.pressures[-1, :, :]
             widget = self.widget_MapOfPressure
-            Drawer.drawField(widget, current_pressure)
+            Drawer.drawField(widget, current_pressure, self.presmin, self.presmax)
         elif sender == self.pushButton_8:
             self.horizontalSlider_2.setValue(self.saturations.shape[0])
             current_saturation = self.saturations[-1, :, :]
             widget = self.widget_MapOfSaturation
-            Drawer.drawField(widget, current_saturation)
+            Drawer.drawField(widget, current_saturation, self.satmin, self.satmax)
 
     def handle_drawSelected_Slider(self):
         sender = self.sender()
@@ -132,12 +166,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             i = self.horizontalSlider.value()
             current_pressure = self.pressures[i, :, :]
             widget = self.widget_MapOfPressure
-            Drawer.drawField(widget, current_pressure)
+            Drawer.drawField(widget, current_pressure, self.presmin, self.presmax)
         elif sender == self.horizontalSlider_2:
             i = self.horizontalSlider_2.value()
             current_saturation = self.saturations[i, :, :]
             widget = self.widget_MapOfSaturation
-            Drawer.drawField(widget, current_saturation)
+            Drawer.drawField(widget, current_saturation, self.satmin, self.satmax)
 
     def handle_startAnimation_Button(self):
         pass
