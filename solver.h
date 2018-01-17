@@ -10,6 +10,7 @@
 #include <QFile>
 #include "logger.h"
 #include "interpol.h"
+#include "hdf5_io.h"
 
 typedef QMap<QString, QVector<double>> input_data_type;
 typedef std::vector< std::vector<double> > vector_double_2d;
@@ -138,6 +139,9 @@ private:
     bool sw_over_1; // Флаг, проверяющий, стала ли насыщенность больше 1
     double prod_con1, prod_con2;
     double inj_con1, inj_con2;
+public:
+    hdf5_io hdf5_worker;
+    int hdf5_step;
 
 public:
 

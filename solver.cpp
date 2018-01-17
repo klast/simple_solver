@@ -21,9 +21,12 @@ Well::Well()
 
 void Solver::init(input_data_type &input_data)
 {
+    hdf5_step = 0;
     qInfo(logInit()) << "Initialization begin";
     qInfo(logInit()) << "NX =" << nx;
     qInfo(logInit()) << "NY =" << ny;
+    hdf5_worker.nx = nx;
+    hdf5_worker.ny = ny;
     nz = 1;
     qInfo(logInit()) << "NZ =" << nz;
     dx = 10;
@@ -224,6 +227,7 @@ double Solver::middle_point(vector_double_2d &arr, int i, int j, const int side)
 
 void Solver::solve()
 {
+    hdf5_worker.openfile();
     // Задаём текущие водонасыщенность и давление нефти через начальные значения
     s_water = s_water_init;
     oil_press = oil_press_init;
@@ -294,7 +298,7 @@ void Solver::inner_solve(double begin_time, double end_time)
             s_water_prev = s_water_next;
             oil_press_prev = oil_press_next;
 
-            if (dt < 1.0E-2)
+            if (dt < 1.0E-4)
             {
                 //qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
                 //exit(-1);
@@ -342,6 +346,18 @@ void Solver::inner_solve(double begin_time, double end_time)
         s_water = s_water_next;
         oil_press = oil_press_next;
 
+        std::vector<double> s_water_hdf5(nx * ny), oil_press_hdf5(nx * ny);
+        int index_hdf5 = 0;
+        for(int i = 0; i < nx; i++)
+            for(int j = 0; j < ny; j++)
+            {
+                s_water_hdf5[index_hdf5] = s_water[i][j];
+                oil_press_hdf5[index_hdf5] = oil_press[i][j];
+                index_hdf5++;
+            }
+        hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", hdf5_step);
+        hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", hdf5_step);
+        hdf5_step++;
         if (oil_press[0][0] < 20.0) prod_con1 = 0.0;
         if (oil_press[nx - 1][ny - 1] < 20.0) prod_con2 = 0.0;
 
