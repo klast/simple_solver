@@ -9,24 +9,28 @@
 
 
 
+
 extern "C"
 {
-
-    QString datafile_name;
+    QString datafile_name[6];
     Model model;
     LIB_SIMPLE_SOLVERSHARED_EXPORT int get_2()
     {
         return 2;
     }
-    LIB_SIMPLE_SOLVERSHARED_EXPORT void set_datafile(char *filename)
+    LIB_SIMPLE_SOLVERSHARED_EXPORT void set_file(int type, char *filename)
     {
-        datafile_name = QString(filename);
-        model.reader.set_datafile(datafile_name);
-        model.simulate();
+        filetypes f_type = model.reader.get_type(type);
+        datafile_name[type] = QString(filename);
+        model.reader.set_file(f_type, datafile_name[type]);
     }
-    LIB_SIMPLE_SOLVERSHARED_EXPORT void get_datafile(char *result)
+    LIB_SIMPLE_SOLVERSHARED_EXPORT int simulate()
     {
-        strcpy(result, datafile_name.toStdString().c_str());
+        return model.simulate();
+    }
+    LIB_SIMPLE_SOLVERSHARED_EXPORT void get_file(int type, char *result)
+    {
+        strcpy(result, datafile_name[type].toStdString().c_str());
     }
 
 }

@@ -30,7 +30,9 @@ SOURCES += \
         reader.cpp \
         solver.cpp \
         model.cpp \
-        logger.cpp
+        logger.cpp \
+        hdf5_io.cpp
+
 
 HEADERS += \
         lib_simple_solver.h \
@@ -38,9 +40,24 @@ HEADERS += \
         reader.h \
         solver.h \
         model.h \
-        logger.h
+        logger.h \
+        interpol.h \
+        hdf5_io.h
+
+CONFIG += c++11
+
+DEFINES += H5_BUILT_AS_DYNAMIC_LIB
+
+win32: LIBS += -L$$PWD/../hdf5-1.8.18/lib/ -lszip -lzlib -lhdf5 -lhdf5_cpp
+
+INCLUDEPATH += $$PWD/../hdf5-1.8.18/include
+DEPENDPATH += $$PWD/../hdf5-1.8.18/include
 
 INCLUDEPATH += $$PWD/eigen
+INCLUDEPATH += $$PWD/unsupported
+
+INCLUDEPATH += $$PWD/highfive/include
+
 
 unix {
     target.path = /usr/lib
