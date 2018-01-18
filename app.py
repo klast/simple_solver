@@ -86,8 +86,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.pressures = self.get_pressures()
         self.saturations = self.get_saturations()
-        self.presmin = 99#np.min(self.pressures)
-        self.presmax = 101#np.max(self.pressures)
+        self.presmin = np.min(self.pressures)
+        self.presmax = np.max(self.pressures)
         self.satmin = np.min(self.saturations)
         self.satmax = np.max(self.saturations)
         self.get_wells()

@@ -40,12 +40,12 @@ class Drawer :
         fig = widget.figure
         fig.clear()
 
-        grid_x = np.linspace(1, field[:, 0].size, field[:, 0].size)
-        grid_y = np.linspace(1, field[0, :].size, field[0, :].size)
+        grid_x = np.linspace(0, field[:, 0].size+1, field[:, 0].size+1)
+        grid_y = np.linspace(0, field[0, :].size+1, field[0, :].size+1)
         X, Y = np.meshgrid(grid_y, grid_x)
 
         plot = fig.add_subplot(111)
-        colors = plot.pcolor(X, Y, field, cmap=plt.cm.RdBu, vmin=np.min(field), vmax=np.max(field))
+        colors = plot.pcolor(X, Y, field, cmap=plt.cm.RdBu, vmin = np.min(field), vmax=np.max(field))
         colorbar = fig.colorbar(colors)
 
         widget.canvas.draw()

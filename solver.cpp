@@ -40,7 +40,7 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "DY =" << dy;
     dz = 1;
     qInfo(logInit()) << "DZ =" << dz;
-    num_global_steps = 10;
+    num_global_steps = 600;
     qInfo(logInit()) << "Number of time steps" << num_global_steps;
     T = num_global_steps * 24; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
@@ -89,7 +89,7 @@ void Solver::init(input_data_type &input_data)
     input_data.clear();
 
     // Инициализация ускорения свободного падения
-    gravity = 9.80665;
+    gravity = 9.80665 * 10e-5;
 
     // TODO: "встроить в интерфейс"
     epsilon_press = 1.0E+3;
@@ -107,7 +107,7 @@ void Solver::init(input_data_type &input_data)
     k_absol = permx;
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
-            k_absol[node_x][node_y] = k_absol[node_x][node_y]; //! СИ: перевод из [мД] в [м^2]
+            k_absol[node_x][node_y] = k_absol[node_x][node_y]* 1.0e-7 * 3600; //! СИ: перевод из [мД] в [м^2]
 
     for (int node = 0; node < nx; node++)
     {
@@ -169,6 +169,8 @@ void Solver::init_wells(input_data_type &input_data)
         //! Перевод в СИ
         prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
         prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
+        //prod1.values.push_back(0);
+        //prod2.values.push_back(0);
         inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
         inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
         //prod1.values.push_back(100 / (m3_sut * dx * dy * dz) );
@@ -298,7 +300,7 @@ void Solver::solve()
 void Solver::inner_solve(double begin_time, double end_time)
 {
     // TODO: добавить расчёт шага dt через условие Куранта
-    dt = end_time - begin_time;
+    dt = end_time - begin_time; 
     //dt = 1;
 
     // Если глобальный временной шаг меньше шага по Куранту
@@ -306,7 +308,7 @@ void Solver::inner_solve(double begin_time, double end_time)
         dt = end_time - begin_time;
 
     double time = begin_time; // FIX: переименовать
-    dt/=10;
+    //dt/=10;
     while (time < end_time)
     {
         // Уменьшаем шаг по времени, если он перескакивает конечное время расчёта
