@@ -52,6 +52,7 @@ public:
     int ix;
     int iy;
     std::vector<double> values; //! для добывающей - дебит, для нагнетательной приемистость
+    std::vector<double> graph; //! для графика
 
     /*!
      * \brief Задать расположение скважины
@@ -114,6 +115,7 @@ private:
 
     // Разное
     // TODO: правильно "распределить" переменные
+    const double m3_sut = 24*3600;
     double T; // Конечное время расчёта [1 с]
     double num_global_steps; // Число глобальных шагов
     double epsilon_press; // Число epsilon (погрешность давления)

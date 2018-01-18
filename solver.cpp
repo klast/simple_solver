@@ -40,7 +40,7 @@ void Solver::init(input_data_type &input_data)
     qInfo(logInit()) << "DY =" << dy;
     dz = 1;
     qInfo(logInit()) << "DZ =" << dz;
-    num_global_steps = 100;
+    num_global_steps = 10;
     qInfo(logInit()) << "Number of time steps" << num_global_steps;
     T = num_global_steps * 24; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
@@ -167,7 +167,6 @@ void Solver::init_wells(input_data_type &input_data)
     {
         int index = i * 4;
         //! Перевод в СИ
-        const double m3_sut = 24*3600;
         prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
         prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
         inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
@@ -250,6 +249,10 @@ void Solver::solve()
         }
     hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", 0);
     hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", 0);
+    prod1.graph.push_back(prod1.values[0]*m3_sut*dx*dy*dz);
+    prod2.graph.push_back(prod2.values[0]*m3_sut*dx*dy*dz);
+    inj1.graph.push_back(inj1.values[0]*m3_sut*dx*dy*dz);
+    inj2.graph.push_back(inj2.values[0]*m3_sut*dx*dy*dz);
 #endif
     for (step = 0; step < num_global_steps; step++)
     {
@@ -262,7 +265,12 @@ void Solver::solve()
         // TODO: обновляем необходимые данные в классе Solver
 
     };
-
+#ifdef HDF5_SOLVE
+    hdf5_worker.save_value(prod1.graph, "prod1");
+    hdf5_worker.save_value(prod2.graph, "prod2");
+    hdf5_worker.save_value(inj1.graph, "inj1");
+    hdf5_worker.save_value(inj2.graph, "inj2");
+#endif
     QFile swat_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/swat.csv");
     QFile pres_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/pres.csv");
     swat_file.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -378,6 +386,10 @@ void Solver::inner_solve(double begin_time, double end_time)
             }
         hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", hdf5_step);
         hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", hdf5_step);
+        prod1.graph.push_back(prod1.values[step] *m3_sut*dx*dy*dz);
+        prod2.graph.push_back(prod2.values[step] *m3_sut*dx*dy*dz);
+        inj1.graph.push_back(inj1.values[step] *m3_sut*dx*dy*dz);
+        inj2.graph.push_back(inj2.values[step] *m3_sut*dx*dy*dz);
         hdf5_step++;
 #endif
         if (oil_press[prod1.ix][prod1.iy] < 1.0) prod_con1 = 0.0;

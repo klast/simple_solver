@@ -54,6 +54,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             list_pres.append(tmp)
         list_pres = np.array(list_pres)
         return list_pres
+    
+    def get_wells(self):
+        f = h5py.File("tests/model4_test/init4.h5", "r")
+        self.prod1 = np.array(f['prod1'])
+        self.prod2 = np.array(f['prod2'])
+        self.inj1 = np.array(f['inj1'])
+        self.inj2 = np.array(f['inj2'])
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -83,6 +90,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.presmax = 101#np.max(self.pressures)
         self.satmin = np.min(self.saturations)
         self.satmax = np.max(self.saturations)
+        self.get_wells()
 
         self.horizontalSlider.setMinimum(0)
         self.horizontalSlider.setMaximum(self.pressures.shape[0] - 1)
@@ -179,26 +187,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_drawOilWellsParams(self):
         title = "Inj. 1"
         widget = self.widget_GraphInj_1
-        data_x = np.linspace(1, 20, 20)
-        data_y = [random.random() for i in range(data_x.size)]
+        data_x = np.linspace(1, self.inj1.shape[0], self.inj1.shape[0])
+        data_y = self.inj1
         Drawer.drawLineGraph(widget, data_x, data_y, title)
 
         title = "Inj. 2"
         widget = self.widget_GraphInj_2
-        data_x = np.linspace(1, 20, 20)
-        data_y = [random.random() for i in range(data_x.size)]
+        data_x = np.linspace(1, self.inj1.shape[0], self.inj1.shape[0])
+        data_y = self.inj2
         Drawer.drawLineGraph(widget, data_x, data_y, title)
 
         title = "Prod. 1"
         widget = self.widget_GraphProd_1
-        data_x = np.linspace(1, 20, 20)
-        data_y = [random.random() for i in range(data_x.size)]
+        data_x = np.linspace(1, self.inj1.shape[0], self.inj1.shape[0])
+        data_y = self.prod1
         Drawer.drawLineGraph(widget, data_x, data_y, title)
 
         title = "Prod. 2"
         widget = self.widget_GraphProd_2
-        data_x = np.linspace(1, 20, 20)
-        data_y = [random.random() for i in range(data_x.size)]
+        data_x = np.linspace(1, self.inj1.shape[0], self.inj1.shape[0])
+        data_y = self.prod2
         Drawer.drawLineGraph(widget, data_x, data_y, title)
 
 

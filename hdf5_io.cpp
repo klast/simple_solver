@@ -55,4 +55,22 @@ void hdf5_io::save_cube_on_timestep(std::vector<double> &cube, std::string cube_
         std::cerr << err.what() << std::endl;
     } 
 }
+
+void hdf5_io::save_value(std::vector<double> &value, std::string value_name)
+{
+    try
+    {
+        QString filename = datafile_name.split('.').at(0) + ".h5";
+        HighFive::File this_file(filename.toStdString(), HighFive::File::ReadWrite);
+        std::vector<int> v_dims(2);
+        v_dims[0] = value.size();
+        size_t dims = value.size();
+        HighFive::DataSet dataset = this_file.createDataSet<double>(value_name, HighFive::DataSpace(dims));
+        dataset.write(value.data());
+    }
+    catch(HighFive::Exception& err)
+    {
+        std::cerr << err.what() << std::endl;
+    }
+}
 #endif
