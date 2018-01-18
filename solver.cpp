@@ -22,8 +22,8 @@ Well::Well()
 
 void Solver::init(input_data_type &input_data)
 {
-    omp_set_num_threads(4);
-    qInfo(logInit()) << omp_get_num_threads() << "threads";
+    //omp_set_num_threads(4);
+    //qInfo(logInit()) << omp_get_num_threads() << "threads";
     hdf5_step = 1;
     qInfo(logInit()) << "Initialization begin";
     qInfo(logInit()) << "NX =" << nx;
@@ -156,10 +156,10 @@ void Solver::init_wells(input_data_type &input_data)
     //prod2.set_location(nx - 2, ny - 2);
     //inj1.set_location(1, ny - 2);
     //inj2.set_location(nx - 2, 1);
-    prod1.set_location(0, 0);
-    prod2.set_location(nx - 1, ny - 1);
-    inj1.set_location(nx/2, ny/2);
-    inj2.set_location(nx - 1, 0);
+    prod1.set_location(2, 2);
+    prod2.set_location(nx - 3, ny - 3);
+    inj1.set_location(2, ny - 3);
+    inj2.set_location(nx - 3, 2);
     //! Инициализация дебитов и приемистостей
     QVector<double> wellinfo = input_data["wellinfo"];
     int wellinfo_size = wellinfo.size() / 4;
@@ -167,15 +167,15 @@ void Solver::init_wells(input_data_type &input_data)
     {
         int index = i * 4;
         //! Перевод в СИ
-        const double m3_sut = 24 * 3600;
-        //prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
-        //prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
-        //inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
-        //inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
-        prod1.values.push_back(25 / (m3_sut * dx * dy * dz) );
-        prod2.values.push_back(25 / (m3_sut * dx * dy * dz));
-        inj1.values.push_back(25 / (m3_sut * dx * dy * dz));
-        inj2.values.push_back(25 / (m3_sut * dx * dy * dz));
+        const double m3_sut = 24*3600;
+        prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
+        prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
+        inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
+        inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
+        //prod1.values.push_back(100 / (m3_sut * dx * dy * dz) );
+       // prod2.values.push_back(100/ (m3_sut * dx * dy * dz));
+        //inj1.values.push_back(115/ (m3_sut * dx * dy * dz));
+        //inj2.values.push_back(115 / (m3_sut * dx * dy * dz));
 
         //prod_con1 = 1 / (m3_sut * dx * dy * dz);
         //prod_con2 = 1 / (m3_sut * dx * dy * dz);
@@ -319,7 +319,7 @@ void Solver::inner_solve(double begin_time, double end_time)
             s_water_prev = s_water_next;
             oil_press_prev = oil_press_next;
 
-            if (dt < 1.0E-4)
+            if (dt < 1.0E-2)
             {
                 //qInfo(logSolve()) << "FUCK MY BRAIN! EVERYTHING IS AWFUL!";
                 //exit(-1);
@@ -514,6 +514,7 @@ void Solver::implicit_scheme_calc()
             temp[Y_PLUS] = (border[Y_PLUS]) ? 0.0 : T_coeff[Y_PLUS] * (lambda_oil[Y_PLUS] + lambda_water[Y_PLUS]);
             temp[Y_MINUS] = (border[Y_MINUS]) ? 0.0 : T_coeff[Y_MINUS] * (lambda_oil[Y_MINUS] + lambda_water[Y_MINUS]);
             temp[X_Y]  = - (temp[X_PLUS] + temp[X_MINUS] + temp[Y_PLUS] + temp[Y_MINUS]);
+            //temp[X_Y] += 0.1;
             qDebug(logSolve()) << print(temp, "temp_matrix");
 
             for(auto & side: sides)
@@ -577,9 +578,10 @@ void Solver::implicit_scheme_calc()
     // Вывод отладочной информации
   //  qDebug(logSolve()) << "Количество итераций" << mat_solver.iterations();
    // qDebug(logSolve()) << "Норма матрицы" << mat_solver.error();
-    double relative_error = (pres_mat_dense * solution - pres_vec).norm() / pres_vec.norm();
-    qDebug(logSolve()) << "RELATIVE SOLUTION ERROR IS" << relative_error;
-    qDebug(logSolve()) << "implicit_scheme_calc end\n";
+    double relative_error = (pres_mat_dense * solution - pres_vec).norm();
+    qInfo(logSolve()) << "RELATIVE SOLUTION ERROR IS" << relative_error;
+    qInfo(logSolve()) << "prod_con1" << prod_con1 << "prod_con2" << prod_con2;
+    qInfo(logSolve()) << "implicit_scheme_calc end";
 }
 
 void Solver::explicit_scheme_calc()
@@ -655,6 +657,8 @@ void Solver::explicit_scheme_calc()
 
     s_water_next[inj1.ix][inj1.iy] += inj1.values[step] * dt * b_water;
     s_water_next[inj2.ix][inj2.iy] += inj2.values[step] * dt * b_water;
+    s_water_next[prod1.ix][prod1.iy] -= prod1.values[step] * dt * b_water;
+    s_water_next[prod2.ix][prod2.iy] -= prod2.values[step] * dt * b_water;
     for(int i = 0; i < nx; i++)
         for(int j = 0; j < ny; j++)
             s_water_next[i][j] = s_water_prev[i][j] + s_water_next[i][j];
