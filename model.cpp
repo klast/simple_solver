@@ -29,7 +29,9 @@ void Model::init()
 {
     solver.set_dimens(reader.input_constants["nx"], reader.input_constants["ny"]);
     solver.init(reader.input_1d_arrays);
+#ifdef HDF5_SOLVE
     solver.hdf5_worker.datafile_name = reader.input_files[0]->fileName();
+#endif
 }
 
 void Model::solve()

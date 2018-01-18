@@ -45,7 +45,7 @@ class Drawer :
         X, Y = np.meshgrid(grid_y, grid_x)
 
         plot = fig.add_subplot(111)
-        colors = plot.pcolor(X, Y, field, cmap=plt.cm.RdBu, vmin=np.min(field), vmax=np.max(field))
+        colors = plot.pcolor(X, Y, field, cmap=plt.cm.RdBu, vmin=tmin, vmax=tmax)
         colorbar = fig.colorbar(colors)
 
         widget.canvas.draw()

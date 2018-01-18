@@ -8,7 +8,8 @@
 #include <unsupported/Eigen/SparseExtra>
 //#include <Eigen/LU>
 #include <Eigen/Core>
-
+#include <omp.h>
+#define HDF5_SOLVE
 Solver::Solver()
 {
 
@@ -21,21 +22,25 @@ Well::Well()
 
 void Solver::init(input_data_type &input_data)
 {
+    omp_set_num_threads(4);
+    qInfo(logInit()) << omp_get_num_threads() << "threads";
     hdf5_step = 1;
     qInfo(logInit()) << "Initialization begin";
     qInfo(logInit()) << "NX =" << nx;
     qInfo(logInit()) << "NY =" << ny;
+#ifdef HDF5_SOLVE
     hdf5_worker.nx = nx;
     hdf5_worker.ny = ny;
+#endif
     nz = 1;
     qInfo(logInit()) << "NZ =" << nz;
-    dx = 10;
+    dx = 50;
     qInfo(logInit()) << "DX =" << dx;
-    dy = 10;
+    dy = 50;
     qInfo(logInit()) << "DY =" << dy;
     dz = 1;
     qInfo(logInit()) << "DZ =" << dz;
-    num_global_steps = 5;
+    num_global_steps = 100;
     qInfo(logInit()) << "Number of time steps" << num_global_steps;
     T = num_global_steps * 24; //! типо 1 день, надо ли вообще так
     for(int i = 0; i < nx; i++)
@@ -84,7 +89,7 @@ void Solver::init(input_data_type &input_data)
     input_data.clear();
 
     // Инициализация ускорения свободного падения
-    gravity = 9.81;
+    gravity = 9.80665;
 
     // TODO: "встроить в интерфейс"
     epsilon_press = 1.0E+3;
@@ -138,6 +143,8 @@ void Solver::init_swof(input_data_type &input_data)
     qInfo(logInit()) << "Капиллярка" << pcow_init;
     swof.clear();
     krw_inter.init(swof_size, 1.0, sw_init, krw_init);
+    qInfo(logInit()) << "Массив A для KRW" << krw_inter.a;
+    qInfo(logInit()) << "Массив B для KRW" << krw_inter.b;
     krow_inter.init(swof_size, 1.0, sw_init, krow_init);
     pcow_inter.init(swof_size, 1.0, sw_init, pcow_init);
 
@@ -145,13 +152,13 @@ void Solver::init_swof(input_data_type &input_data)
 
 void Solver::init_wells(input_data_type &input_data)
 {
-//    prod1.set_location(1, 1);
-//    prod2.set_location(nx - 2, ny - 2);
-//    inj1.set_location(1, ny - 2);
-//    inj2.set_location(nx - 2, 1);
+    //prod1.set_location(1, 1);
+    //prod2.set_location(nx - 2, ny - 2);
+    //inj1.set_location(1, ny - 2);
+    //inj2.set_location(nx - 2, 1);
     prod1.set_location(0, 0);
     prod2.set_location(nx - 1, ny - 1);
-    inj1.set_location(0, ny - 1);
+    inj1.set_location(nx/2, ny/2);
     inj2.set_location(nx - 1, 0);
     //! Инициализация дебитов и приемистостей
     QVector<double> wellinfo = input_data["wellinfo"];
@@ -160,18 +167,18 @@ void Solver::init_wells(input_data_type &input_data)
     {
         int index = i * 4;
         //! Перевод в СИ
-        const double m3_sut = 24;
-       // prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
-       // prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
-       // inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
+        const double m3_sut = 24 * 3600;
+        //prod1.values.push_back(wellinfo[index] / (m3_sut * dx * dy * dz) );
+        //prod2.values.push_back(wellinfo[index + 1] / (m3_sut * dx * dy * dz));
+        //inj1.values.push_back(wellinfo[index + 2] / (m3_sut * dx * dy * dz));
         //inj2.values.push_back(wellinfo[index + 3] / (m3_sut * dx * dy * dz));
         prod1.values.push_back(25 / (m3_sut * dx * dy * dz) );
         prod2.values.push_back(25 / (m3_sut * dx * dy * dz));
         inj1.values.push_back(25 / (m3_sut * dx * dy * dz));
         inj2.values.push_back(25 / (m3_sut * dx * dy * dz));
 
-        prod_con1 = 25 / (m3_sut * dx * dy * dz);
-        prod_con2 = 25 / (m3_sut * dx * dy * dz);
+        //prod_con1 = 1 / (m3_sut * dx * dy * dz);
+        //prod_con2 = 1 / (m3_sut * dx * dy * dz);
 
     }
     qInfo(logInit()) << "prod1 (" << prod1.ix + 1 << "," << prod1.iy + 1 << ")";
@@ -227,10 +234,11 @@ double Solver::middle_point(vector_double_2d &arr, int i, int j, const int side)
 
 void Solver::solve()
 {
-    hdf5_worker.openfile();
     // Задаём текущие водонасыщенность и давление нефти через начальные значения
     s_water = s_water_init;
     oil_press = oil_press_init;
+#ifdef HDF5_SOLVE
+    hdf5_worker.openfile();
     std::vector<double> s_water_hdf5(nx * ny), oil_press_hdf5(nx * ny);
     int index_hdf5 = 0;
     for(int i = 0; i < nx; i++)
@@ -242,12 +250,13 @@ void Solver::solve()
         }
     hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", 0);
     hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", 0);
+#endif
     for (step = 0; step < num_global_steps; step++)
     {
         qInfo(logSolve()) << "Starting" << step << "step";
         double global_dt = T / num_global_steps; // Определяем глобальный шаг по времени
-        //prod_con1 = prod1.values[step];
-        //prod_con2 = prod2.values[step];
+        prod_con1 = prod1.values[step];
+        prod_con2 = prod2.values[step];
         inner_solve(step * global_dt, (step + 1) * global_dt); // Выполняем внутренние итерации
         //! TODO(Вова): сохраняем полученное решение в h5
         // TODO: обновляем необходимые данные в классе Solver
@@ -289,6 +298,7 @@ void Solver::inner_solve(double begin_time, double end_time)
         dt = end_time - begin_time;
 
     double time = begin_time; // FIX: переименовать
+    dt/=10;
     while (time < end_time)
     {
         // Уменьшаем шаг по времени, если он перескакивает конечное время расчёта
@@ -356,7 +366,7 @@ void Solver::inner_solve(double begin_time, double end_time)
         // Обновляем необходимые данные по водонасыщенности и давлению воды
         s_water = s_water_next;
         oil_press = oil_press_next;
-
+#ifdef HDF5_SOLVE
         std::vector<double> s_water_hdf5(nx * ny), oil_press_hdf5(nx * ny);
         int index_hdf5 = 0;
         for(int i = 0; i < nx; i++)
@@ -369,8 +379,9 @@ void Solver::inner_solve(double begin_time, double end_time)
         hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", hdf5_step);
         hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", hdf5_step);
         hdf5_step++;
-        if (oil_press[0][0] < 20.0) prod_con1 = 0.0;
-        if (oil_press[nx - 1][ny - 1] < 20.0) prod_con2 = 0.0;
+#endif
+        if (oil_press[prod1.ix][prod1.iy] < 1.0) prod_con1 = 0.0;
+        if (oil_press[prod2.ix][prod2.iy] < 1.0) prod_con2 = 0.0;
 
         time += dt;
     };
@@ -434,6 +445,7 @@ void Solver::implicit_scheme_calc()
     std::vector<Trip> tripletList;
     qDebug(logSolve()) << "Начинаем формирование матрицы";
     std::cout << "Implicit_scheme_calc begin\n";
+//#pragma omp parallel for
     for (int node_y = 0; node_y < ny; node_y++)
         for (int node_x = 0; node_x < nx; node_x++)
         {
@@ -545,11 +557,11 @@ void Solver::implicit_scheme_calc()
     std::vector<double> pres_vec_std(pres_vec.data(), pres_vec.data() + pres_vec.rows() * pres_vec.cols());
     qDebug(logSolve()) << "RHS\n";
     qDebug(logSolve()) << pres_vec_std;
-   // system(qPrintable("C:/users/spelevova/documents/simple_solver/console.bat"));
+    //system(qPrintable("C:/users/spelevova/documents/simple_solver/console.bat"));
     // Получить вектор решений
     Eigen::VectorXd solution(nx * ny);
     //Eigen::loadMarketVector(solution, "C:/users/spelevova/documents/simple_solver/tests/model4_test/test.mtx");
-    Eigen::FullPivLU<Eigen::MatrixXd> fullpivlu(pres_mat_dense);
+    Eigen::FullPivHouseholderQR<Eigen::MatrixXd> fullpivlu(pres_mat_dense);
     fullpivlu.setThreshold(1e-8);
     solution = fullpivlu.solve(pres_vec);
     std::vector<double> solution_std(solution.data(), solution.data() + solution.rows() * solution.cols());
@@ -573,6 +585,7 @@ void Solver::implicit_scheme_calc()
 void Solver::explicit_scheme_calc()
 {
     qDebug(logSolve()) << "Explicit_scheme_calc begin\n";
+//#pragma omp parallel for
     for (int node_x = 0; node_x < nx; node_x++)
         for (int node_y = 0; node_y < ny; node_y++)
         {

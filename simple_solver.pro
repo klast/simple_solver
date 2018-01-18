@@ -42,6 +42,7 @@ HEADERS += \
         hdf5_io.h
 
 CONFIG += c++11
+QMAKE_CXXFLAGS +=  -openmp
 
 DEFINES += H5_BUILT_AS_DYNAMIC_LIB
 

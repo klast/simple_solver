@@ -1,3 +1,5 @@
+#define HDF5_SOLVE
+#ifdef HDF5_SOLVE
 #ifndef HDF5_IO_H
 #define HDF5_IO_H
 
@@ -50,3 +52,4 @@ public:
 };
 
 #endif // HDF5_IO_H
+#endif

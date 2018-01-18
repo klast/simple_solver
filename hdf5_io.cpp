@@ -1,4 +1,5 @@
 #include "hdf5_io.h"
+#ifdef HDF5_SOLVE
 
 hdf5_io::hdf5_io()
 {
@@ -54,3 +55,4 @@ void hdf5_io::save_cube_on_timestep(std::vector<double> &cube, std::string cube_
         std::cerr << err.what() << std::endl;
     } 
 }
+#endif

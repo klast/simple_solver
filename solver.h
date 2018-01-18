@@ -140,7 +140,9 @@ private:
     double prod_con1, prod_con2;
     double inj_con1, inj_con2;
 public:
+#ifdef HDF5_SOLVE
     hdf5_io hdf5_worker;
+#endif
     int hdf5_step;
 
 public:
