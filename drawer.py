@@ -57,8 +57,19 @@ class Drawer :
 
         plot = fig.add_subplot(111)
         plot.axes.set_title(title)
-
-        plot.plot(data_y, '*-')
+        plot.plot(data_x, data_y, '*-')
 
         widget.canvas.draw()
+        
+    def draw2LineGraph(widget, data_x, data_1, data_2, title, legend):
+        fig = widget.figure
+        fig.clear()
+
+        plot = fig.add_subplot(111)
+        plot.axes.set_title(title)
+        plot.plot(data_x, data_1, '*-')
+        plot.plot(data_x, data_2, '*-')
+        plot.legend([legend[0], legend[1]])
+
+        widget.canvas.draw()       
 

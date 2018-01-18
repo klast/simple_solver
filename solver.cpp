@@ -272,6 +272,19 @@ void Solver::solve()
     hdf5_worker.save_value(prod2.graph, "prod2");
     hdf5_worker.save_value(inj1.graph, "inj1");
     hdf5_worker.save_value(inj2.graph, "inj2");
+    std::vector<double> sw_hdf5, krw_hdf5, krow_hdf5, pcow_hdf5;
+    for(int i = 0; i < 101; i++)
+    {
+        double index = i * 0.01;
+        sw_hdf5.push_back(index);
+        krw_hdf5.push_back(krw_inter.y(index));
+        krow_hdf5.push_back(krow_inter.y(index));
+        pcow_hdf5.push_back(pcow_inter.y(index));
+    }
+    hdf5_worker.save_value(sw_hdf5, "sw_init");
+    hdf5_worker.save_value(krw_hdf5, "krw_init");
+    hdf5_worker.save_value(krow_hdf5, "krow_init");
+    hdf5_worker.save_value(pcow_hdf5, "pcow_init");
 #endif
     QFile swat_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/swat.csv");
     QFile pres_file("C:/users/spelevova/documents/simple_solver/tests/model4_test/pres.csv");

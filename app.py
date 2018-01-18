@@ -61,6 +61,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.prod2 = np.array(f['prod2'])
         self.inj1 = np.array(f['inj1'])
         self.inj2 = np.array(f['inj2'])
+        
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -213,15 +214,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_drawGraphPVT(self):
         title = "PVT-свойства"
         widget = self.widget_GraphPvt
-        data_x = np.linspace(1, 20, 20)
-        data_y = [random.random() for i in range(data_x.size)]
-        Drawer.drawLineGraph(widget, data_x, data_y, title)
+        f = h5py.File("tests/model4_test/init4.h5", "r")
+        data_x = np.array(f['sw_init'])
+        data_krw = np.array(f['krw_init'])
+        data_krow = np.array(f['krow_init'])
+        Drawer.draw2LineGraph(widget, data_x, data_krw, data_krow, title, ['krw','krow'])
 
         title = "Каппиллярное давление"
         widget = self.widget_GraphCapillar
-        data_x = np.linspace(1, 20, 20)
-        data_y = [random.random() for i in range(data_x.size)]
-        Drawer.drawLineGraph(widget, data_x, data_y, title)
+        #data_x = np.linspace(1, 20, 20)
+        data_pcow = np.array(f['pcow_init'])#[random.random() for i in range(data_x.size)]
+        Drawer.drawLineGraph(widget, data_x, data_pcow, title)
 
 
 
