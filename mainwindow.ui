@@ -212,7 +212,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Считать тестовую модель 5*5</string>
+       <string>Считать тестовую модель 20*20</string>
       </property>
      </widget>
     </widget>

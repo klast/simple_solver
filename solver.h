@@ -115,7 +115,9 @@ private:
 
     // Разное
     // TODO: правильно "распределить" переменные
-    const double m3_sut = 24*3600;
+    const double m3_sut = 24 * 3600; // Масштабный коэффициент для скважин (перевод сут -> с)
+    const double timeScale = 24.0; // Масштабный временной коэффициент (переводит с -> в мин, часы и т.п.)
+    const double scale = 1.0e-7; // Коэффициент, появляющийся при использовании внесистемных единиц измерения
     double T; // Конечное время расчёта [1 с]
     double num_global_steps; // Число глобальных шагов
     double epsilon_press; // Число epsilon (погрешность давления)
@@ -127,6 +129,16 @@ private:
     Well prod2; //! Вторая добывающая скважина
     Well inj1; //! Первая нагнетательная скважина
     Well inj2; //! Вторая нагнетательная скважина
+
+    double initVol_water; // Начальный объём воды в нормальных условиях [м^3]
+    double initVol_oil; // Начальный объём нефти в нормальных условиях [м^3]
+    double calcVol_water; // Подсчитанный объём воды в нормальных условиях [м^3]
+    double calcVol_oil; // Подсчитанный объём нефти в нормальных условиях [м^3]
+    double errVol_water; // Ошибка в объёме воды [м^3]
+    double errVol_oil; // Ошибка в объёме нефти [м^3]
+    double injVol; // Закачанный объём воды [м^3]
+    double prodVol_water; // Добытый объём воды [м^3]
+    double prodVol_oil; // Добытый объём нефти [м^3]
 
     std::vector<double> sw_init;
     std::vector<double> krw_init;
@@ -196,6 +208,10 @@ public:
     void set_dimens(int t_nx, int t_ny){nx = t_nx; ny = t_ny;}
     double middle_point(vector_double_2d &arr, int i, int j, const int side);
 
+    /*!
+     * \brief Расчёт объёма пласта, закачанного и выкачанного объёмов воды и нефти
+     */
+    void calcVolume();
 };
 
 #endif // SOLVER_H

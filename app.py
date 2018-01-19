@@ -81,6 +81,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_8.clicked.connect(self.handle_drawFinal_Button)
         self.horizontalSlider.valueChanged.connect(self.handle_drawSelected_Slider)
         self.horizontalSlider_2.valueChanged.connect(self.handle_drawSelected_Slider)
+        self.pushButton_3.clicked.connect(self.handle_drawSelected_Slider)
+        self.pushButton_7.clicked.connect(self.handle_drawSelected_Slider)
 
 
         self.filenames = ["", "", "", "", "", ""]
@@ -181,7 +183,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             current_saturation = self.saturations[i, :, :]
             widget = self.widget_MapOfSaturation
             Drawer.drawField(widget, current_saturation, self.satmin, self.satmax)
-
+        elif sender == self.pushButton_3:
+            i = self.horizontalSlider.value()
+            current_pressure = self.pressures[i, :, :]
+            widget = self.widget_MapOfPressure
+            Drawer.drawField(widget, current_pressure, self.presmin, self.presmax)
+            self.horizontalSlider.setValue(i+1)
+        elif sender == self.pushButton_7:
+            i = self.horizontalSlider_2.value()
+            current_saturation = self.saturations[i, :, :]
+            widget = self.widget_MapOfSaturation
+            Drawer.drawField(widget, current_saturation, self.satmin, self.satmax)
+            self.horizontalSlider_2.setValue(i+1)
+               
     def handle_startAnimation_Button(self):
         pass
 
