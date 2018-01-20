@@ -176,12 +176,12 @@ void Solver::init_wells(input_data_type &input_data)
     {
         int index = i * 4;
         //! Перевод в СИ
-        prod1.values.push_back(wellinfo[index] / (timeScale * m3_sut * dx * dy * dz) );
-        prod2.values.push_back(wellinfo[index + 1] / (timeScale * m3_sut * dx * dy * dz));
+        prod1.values.push_back(wellinfo[index] * timeScale / (m3_sut * dx * dy * dz));
+        prod2.values.push_back(wellinfo[index + 1] * timeScale / (m3_sut * dx * dy * dz));
 //        prod1.values.push_back(0);
 //        prod2.values.push_back(0);
-        inj1.values.push_back(wellinfo[index + 2] / (timeScale * m3_sut * dx * dy * dz));
-        inj2.values.push_back(wellinfo[index + 3] / (timeScale * m3_sut * dx * dy * dz));
+        inj1.values.push_back(wellinfo[index + 2] * timeScale / (m3_sut * dx * dy * dz));
+        inj2.values.push_back(wellinfo[index + 3] * timeScale / (m3_sut * dx * dy * dz));
         //prod1.values.push_back(100 / (timeScale * m3_sut * dx * dy * dz) );
        // prod2.values.push_back(100/ (timeScale * m3_sut * dx * dy * dz));
         //inj1.values.push_back(115/ (timeScale * m3_sut * dx * dy * dz));
@@ -260,10 +260,10 @@ void Solver::solve()
         }
     hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", 0);
     hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", 0);
-    prod1.graph.push_back(prod1.values[0]*timeScale * m3_sut*dx*dy*dz);
-    prod2.graph.push_back(prod2.values[0]*timeScale * m3_sut*dx*dy*dz);
-    inj1.graph.push_back(inj1.values[0]*timeScale * m3_sut*dx*dy*dz);
-    inj2.graph.push_back(inj2.values[0]*timeScale * m3_sut*dx*dy*dz);
+    prod1.graph.push_back(prod1.values[0]*dx*dy*dz);
+    prod2.graph.push_back(prod2.values[0]*dx*dy*dz);
+    inj1.graph.push_back(inj1.values[0]*dx*dy*dz);
+    inj2.graph.push_back(inj2.values[0]*dx*dy*dz);
 #endif
     for (step = 0; step < num_global_steps; step++)
     {
@@ -321,18 +321,18 @@ void Solver::solve()
 
 void Solver::calcVolume()
 {
-    injVol += inj1.values[step] + inj2.values[step];
-    prodVol_water += s_water_next[prod1.ix][prod1.iy] * prod1.values[step];
-    prodVol_water += s_water_next[prod2.ix][prod2.iy] * prod2.values[step];
-    prodVol_oil += (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod1.values[step];
-    prodVol_oil += (1.0 - s_water_next[prod2.ix][prod2.iy]) * prod2.values[step];
+    injVol += inj1.values[step] * dx * dy * dz + inj2.values[step] * dx * dy * dz;
+    prodVol_water += s_water_next[prod1.ix][prod1.iy] * prod1.values[step] * dx * dy * dz;
+    prodVol_water += s_water_next[prod2.ix][prod2.iy] * prod2.values[step] * dx * dy * dz;
+    prodVol_oil += (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod1.values[step] * dx * dy * dz;
+    prodVol_oil += (1.0 - s_water_next[prod2.ix][prod2.iy]) * prod2.values[step] * dx * dy * dz;
 
-    calcVol_water = inj1.values[step] + inj2.values[step];
-    calcVol_water -= s_water_next[prod1.ix][prod1.iy] * prod1.values[step];
-    calcVol_water -= s_water_next[prod2.ix][prod2.iy] * prod2.values[step];
-    calcVol_oil = inj1.values[step] + inj2.values[step];
-    calcVol_oil -= (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod1.values[step];
-    calcVol_oil -= (1.0 - s_water_next[prod2.ix][prod2.iy]) * prod2.values[step];
+    calcVol_water = inj1.values[step] * dx * dy * dz + inj2.values[step] * dx * dy * dz;
+    calcVol_water -= s_water_next[prod1.ix][prod1.iy] * prod1.values[step] * dx * dy * dz;
+    calcVol_water -= s_water_next[prod2.ix][prod2.iy] * prod2.values[step] * dx * dy * dz;
+    calcVol_oil = 0.0;
+    calcVol_oil -= (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod1.values[step] * dx * dy * dz;
+    calcVol_oil -= (1.0 - s_water_next[prod2.ix][prod2.iy]) * prod2.values[step] * dx * dy * dz;
     for (int node_y = 0; node_y < ny; node_y++)
         for (int node_x = 0; node_x < nx; node_x++)
         {
@@ -352,6 +352,29 @@ void Solver::calcVolume()
     qInfo(logSolve()) << "Calculated oil volume =" << calcVol_oil;
     qInfo(logSolve()) << "Error water volume =" << errVol_water;
     qInfo(logSolve()) << "Error oil volume =" << errVol_oil;
+}
+
+double Solver::Kurant_func()
+{
+    double temp1 = 0.0;
+    for (std::size_t node = 1; node < pcow_init.size(); node++)
+        if (temp1 < std::abs((pcow_init[node] - pcow_init[node - 1]) / (sw_init[node] - sw_init[node - 1])))
+            temp1 = std::abs((pcow_init[node] - pcow_init[node - 1]) / (sw_init[node] - sw_init[node - 1]));
+    if (!isnormal(temp1)) temp1 = 1.0;
+
+    double temp2 = viscosity_oil / krow_init[0] + viscosity_water / krw_init[0];
+    for (std::size_t node_o = 0; node_o < krow_init.size(); node_o++)
+        for (std::size_t node = 0; node < krw_init.size(); node++)
+            if (temp2 > (viscosity_oil / krow_init[node_o] + viscosity_water / krw_init[node]))
+                temp2 = viscosity_oil / krow_init[node_o] + viscosity_water / krw_init[node];
+    if (!isnormal(temp2)) temp2 = 1.0;
+
+    double dt_Kurant = 1.0E+13 * 0.5 * dx * dx * porosity[0][0] / k_absol[0][0] / temp1 * temp2;
+    qInfo(logSolve()) << "dt_Kurant: " << dt_Kurant;
+    qInfo(logSolve()) << "dt: " << dt;
+    qInfo(logSolve()) << "err_dt: " << std::abs(dt_Kurant - dt);
+
+    return dt_Kurant;
 }
 
 void Solver::inner_solve(double begin_time, double end_time)
@@ -433,6 +456,9 @@ void Solver::inner_solve(double begin_time, double end_time)
 		// Подсчёт изменнёных объёмов воды и нефти в нормальных условиях
         calcVolume();
 
+        // Расчёт dt по условию Куранта
+        double dt_Kurant = Kurant_func();
+
         // Обновляем необходимые данные по водонасыщенности и давлению воды
         s_water = s_water_next;
         oil_press = oil_press_next;
@@ -448,10 +474,10 @@ void Solver::inner_solve(double begin_time, double end_time)
             }
         hdf5_worker.save_cube_on_timestep(s_water_hdf5, "saturation_cube", hdf5_step);
         hdf5_worker.save_cube_on_timestep(oil_press_hdf5, "pressure_cube", hdf5_step);
-        prod1.graph.push_back(prod1.values[step] *timeScale * m3_sut*dx*dy*dz);
-        prod2.graph.push_back(prod2.values[step] *timeScale * m3_sut*dx*dy*dz);
-        inj1.graph.push_back(inj1.values[step] *timeScale * m3_sut*dx*dy*dz);
-        inj2.graph.push_back(inj2.values[step] *timeScale * m3_sut*dx*dy*dz);
+        prod1.graph.push_back(prod1.values[step] *dx*dy*dz);
+        prod2.graph.push_back(prod2.values[step] *dx*dy*dz);
+        inj1.graph.push_back(inj1.values[step] *dx*dy*dz);
+        inj2.graph.push_back(inj2.values[step] *dx*dy*dz);
         hdf5_step++;
 #endif
         if (oil_press[prod1.ix][prod1.iy] < 1.0) prod_con1 = 0.0;
@@ -459,13 +485,13 @@ void Solver::inner_solve(double begin_time, double end_time)
 
         time += dt;
     };
-    qInfo(logSolve()) << "S_WATER";
+    qDebug(logSolve()) << "S_WATER";
     for(int i = 0; i < s_water.size(); i++ )
-        qInfo(logSolve()) << s_water[i];
+        qDebug(logSolve()) << s_water[i];
 
-    qInfo(logSolve()) << "OIL_PRESS";
+    qDebug(logSolve()) << "OIL_PRESS";
     for(int i = 0; i < oil_press.size(); i++ )
-        qInfo(logSolve()) << oil_press[i];
+        qDebug(logSolve()) << oil_press[i];
 
 }
 
@@ -607,21 +633,21 @@ void Solver::implicit_scheme_calc()
 
             // Учёт нагнетательных скважин (только вода)
             if ((node_x == inj1.ix) && (node_y == inj1.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj1.values[step];
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj1.values[step];// * dx * dy * dz;
             if ((node_x == inj2.ix) && (node_y == inj2.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj2.values[step];
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) - b_water * inj2.values[step];// * dx * dy * dz;
 
             // Учёт добавающих скважин (только вода)
             if ((node_x == prod1.ix) && (node_y == prod1.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_water * s_water_next[prod1.ix][prod1.iy] * prod_con1;
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_water * s_water_next[prod1.ix][prod1.iy] * prod_con1;// * dx * dy * dz;
             if ((node_x == prod2.ix) && (node_y == prod2.iy))
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_water * s_water_next[prod1.ix][prod1.iy] * prod_con2;
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_water * s_water_next[prod1.ix][prod1.iy] * prod_con2;// * dx * dy * dz;
 
             // Учёт добавающих скважин (только нефть)
             if ((node_x == prod1.ix) && (node_y == prod1.iy) )
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_oil * (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod_con1;
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_oil * (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod_con1;// * dx * dy * dz;
             if ((node_x == prod2.ix) && (node_y == prod2.iy) )
-                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_oil * (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod_con2;
+                pres_vec(index[X_Y]) = pres_vec(index[X_Y]) + b_oil * (1.0 - s_water_next[prod1.ix][prod1.iy]) * prod_con2;// * dx * dy * dz;
 
             qDebug(logSolve()) << "pres_vec[" << index[X_Y] << "] = " << pres_vec(index[X_Y]) << endl;
         };
@@ -738,10 +764,10 @@ void Solver::explicit_scheme_calc()
             qDebug(logSolve()) << QString("s_water_next[%1][%2] =").arg(QString::number(node_x), QString::number(node_y)) << s_water_next[node_x][node_y] << endl;
         };
 
-    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] * dt * b_water;
-    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] * dt * b_water;
-    s_water_next[prod1.ix][prod1.iy] -= s_water_prev[prod1.ix][prod1.iy] * prod1.values[step] * dt * b_water;
-    s_water_next[prod2.ix][prod2.iy] -= s_water_prev[prod2.ix][prod2.iy] * prod2.values[step] * dt * b_water;
+    s_water_next[inj1.ix][inj1.iy] += inj1.values[step] * dt * b_water;// / porosity[inj1.ix][inj1.iy];
+    s_water_next[inj2.ix][inj2.iy] += inj2.values[step] * dt * b_water;// / porosity[inj2.ix][inj2.iy];
+    s_water_next[prod1.ix][prod1.iy] -= s_water_prev[prod1.ix][prod1.iy] * prod1.values[step] * dt * b_water;// / porosity[prod1.ix][prod1.iy];
+    s_water_next[prod2.ix][prod2.iy] -= s_water_prev[prod2.ix][prod2.iy] * prod2.values[step] * dt * b_water;// / porosity[prod2.ix][prod2.iy];
     for(int i = 0; i < nx; i++)
         for(int j = 0; j < ny; j++)
             s_water_next[i][j] = s_water_prev[i][j] + s_water_next[i][j];
